@@ -3717,9 +3717,17 @@ SRST
     (the default hub). Use name to specify the name of the hub port.
 ERST
 
+STEXI
+@end table
+ETEXI
 DEFHEADING()
 
 DEFHEADING(Character device options:)
+STEXI
+
+The general form of a character device option is:
+@table @option
+ETEXI
 
 DEF("chardev", HAS_ARG, QEMU_OPTION_chardev,
     "-chardev help\n"
@@ -4079,6 +4087,9 @@ The available backends are:
     traffic identified by a name (preferably a fqdn).
 ERST
 
+STEXI
+@end table
+ETEXI
 DEFHEADING()
 
 #ifdef CONFIG_TPM
@@ -4156,6 +4167,9 @@ The available backends are:
         -chardev socket,id=chrtpm,path=/tmp/swtpm-sock -tpmdev emulator,id=tpm0,chardev=chrtpm -device tpm-tis,tpmdev=tpm0
 ERST
 
+STEXI
+@end table
+ETEXI
 DEFHEADING()
 
 #endif
