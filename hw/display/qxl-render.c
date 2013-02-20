@@ -129,7 +129,8 @@ static void qxl_render_update_area_unlocked(PCIQXLDevice *qxl)
                  height,
                  format,
                  qxl->guest_primary.abs_stride,
-                 qxl->guest_primary.data);
+                 qxl->guest_primary.data,
+                 false);
         } else {
             surface = qemu_create_displaysurface
                 (width,
