@@ -568,6 +568,9 @@ static void scsi_write_complete_noio(SCSIDiskReq *r, int ret)
     if (scsi_disk_req_check_error(r, ret, ret > 0)) {
         goto done;
     }
+    if (r->req.io_canceled) {
+        goto done;
+    }
 
     n = r->qiov.size / BDRV_SECTOR_SIZE;
     r->sector += n;
