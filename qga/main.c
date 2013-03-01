@@ -92,6 +92,11 @@ struct GAConfig {
     bool retry_path;
 };
 
+typedef struct GAPersistentState {
+#define QGA_PSTATE_DEFAULT_FD_COUNTER 1000
+    int64_t fd_counter;
+} GAPersistentState;
+
 struct GAState {
     JSONMessageParser parser;
     GMainLoop *main_loop;
