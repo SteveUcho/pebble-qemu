@@ -650,6 +650,9 @@ int inet_parse(InetSocketAddress *addr, const char *str, Error **errp)
             error_setg(errp, "error parsing address '%s'", str);
             return -1;
         }
+        if (host[strspn(host, "0123456789.")] == '\0') {
+            addr->ipv4 = addr->has_ipv4 = true;
+        }
     }
 
     addr->host = g_strdup(host);
