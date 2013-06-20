@@ -1405,6 +1405,8 @@ static void decode_new_cmd(Flash *s, uint32_t value)
         }
         break;
     case NOP:
+    case SLEEP:
+    case WAKE:
         break;
     case EN_4BYTE_ADDR:
         s->four_bytes_address_mode = true;
