@@ -19,7 +19,7 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "stm32.h"
+#include "hw/arm/stm32.h"
 
 
 
