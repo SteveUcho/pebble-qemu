@@ -113,10 +113,15 @@ qemu_irq qemu_irq_invert(qemu_irq irq)
     return qemu_allocate_irq(qemu_notirq, irq, 0);
 }
 
-void qemu_irq_intercept_in(qemu_irq *gpio_in, qemu_irq_handler handler, int n)
+
+void qemu_irq_intercept_in(qemu_irq *gpio_in, qemu_irq_handler handler,
+                           int id, int n)
 {
     int i;
+    IRQInterceptData *intercept_data = g_malloc0(sizeof(IRQInterceptData));
     qemu_irq *old_irqs = qemu_allocate_irqs(NULL, NULL, n);
+    intercept_data->id = id;
+    intercept_data->old_irqs = old_irqs;
     for (i = 0; i < n; i++) {
         *old_irqs[i] = *gpio_in[i];
         gpio_in[i]->handler = handler;
