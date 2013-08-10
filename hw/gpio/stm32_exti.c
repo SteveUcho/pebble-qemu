@@ -190,10 +190,12 @@ static void stm32_exti_change_EXTI_PR_bit(Stm32Exti *s, unsigned pos,
     }
 }
 
-
-static uint64_t stm32_exti_readw(void *opaque, hwaddr offset)
+static uint64_t stm32_exti_read(void *opaque, hwaddr offset,
+                          unsigned size)
 {
     Stm32Exti *s = (Stm32Exti *)opaque;
+
+    assert(size == 4);
 
     switch (offset) {
         case EXTI_IMR_OFFSET:
@@ -219,8 +221,9 @@ static uint64_t stm32_exti_readw(void *opaque, hwaddr offset)
 static void stm32_exti_writew(void *opaque, hwaddr offset, uint64_t value)
 {
     Stm32Exti *s = (Stm32Exti *)opaque;
-
     int pos, bit_value;
+
+    assert(size == 4);
 
     if(offset <= EXTI_EMR_OFFSET) {
         switch (offset) {
@@ -303,6 +306,8 @@ static void stm32_exti_write(void *opaque, hwaddr offset, uint64_t value,
 static const MemoryRegionOps stm32_exti_ops = {
     .read = stm32_exti_read,
     .write = stm32_exti_write,
+    .valid.min_access_size = 4,
+    .valid.max_access_size = 4,
     .endianness = DEVICE_NATIVE_ENDIAN
 };
 

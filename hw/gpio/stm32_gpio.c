@@ -223,9 +223,13 @@ static void stm32_gpio_GPIOx_BRR_write(Stm32Gpio *s, uint32_t new_value)
             false);
 }
 
-
-static uint64_t stm32_gpio_readw(Stm32Gpio *s, hwaddr offset)
+static uint64_t stm32_gpio_read(void *opaque, hwaddr offset,
+                          unsigned size)
 {
+    Stm32Gpio *s = (Stm32Gpio *)opaque;
+
+    assert(size == 4);
+
     switch (offset) {
         case GPIOx_CRL_OFFSET: /* GPIOx_CRL */
             return s->GPIOx_CRy[GPIOx_CRL_INDEX];
@@ -254,7 +258,11 @@ static uint64_t stm32_gpio_readw(Stm32Gpio *s, hwaddr offset)
 
 static void stm32_gpio_writew(Stm32Gpio *s, hwaddr offset, uint64_t value)
 {
+    Stm32Gpio *s = (Stm32Gpio *)opaque;
 
+    assert(size == 4);
+
+    stm32_rcc_check_periph_clk((Stm32Rcc *)s->stm32_rcc, s->periph);
 
     switch (offset) {
         case GPIOx_CRL_OFFSET: /* GPIOx_CRL */
@@ -320,6 +328,8 @@ static void stm32_gpio_write(void *opaque, hwaddr offset, uint64_t value,
 static const MemoryRegionOps stm32_gpio_ops = {
     .read = stm32_gpio_read,
     .write = stm32_gpio_write,
+    .valid.min_access_size = 4,
+    .valid.max_access_size = 4,
     .endianness = DEVICE_NATIVE_ENDIAN
 };
 
