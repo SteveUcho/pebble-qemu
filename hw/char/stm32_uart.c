@@ -25,6 +25,7 @@
 #include "stm32f1xx.h"
 #include "stm32f2xx.h"
 #include "sysemu/char.h"
+#include "qemu/bitops.h"
 
 
 /* DEFINITIONS*/
@@ -774,12 +775,27 @@ static void stm32_uart_writeh(
 static uint64_t stm32_uart_read(void *opaque, hwaddr offset, unsigned size)
 {
     Stm32Uart *s = (Stm32Uart *)opaque;
+    uint32_t value;
+    int start = (offset & 3) * 8;
+    int length = size * 8;
 
-    switch(size) {
-        case HALFWORD_ACCESS_SIZE:
-            return stm32_uart_readh(s, offset);
-        case WORD_ACCESS_SIZE:
-            return stm32_uart_readw(s, offset);
+    switch (offset & 0xfffffffc) {
+        case USART_SR_OFFSET:
+            return extract64(stm32_uart_USART_SR_read(s), start, length);
+        case USART_DR_OFFSET:
+            stm32_uart_USART_DR_read(s, &value);
+            return extract64(value, start, length);
+        case USART_BRR_OFFSET:
+            return extract64(s->USART_BRR, start, length);
+        case USART_CR1_OFFSET:
+            return extract64(s->USART_CR1, start, length);
+        case USART_CR2_OFFSET:
+            return extract64(s->USART_CR2, start, length);
+        case USART_CR3_OFFSET:
+            return extract64(s->USART_CR3, start, length);
+        case USART_GTPR_OFFSET:
+            STM32_NOT_IMPL_REG(offset, size);
+            return 0;
         default:
             STM32_BAD_REG(offset, size);
             return 0;
@@ -790,18 +806,41 @@ static void stm32_uart_write(void *opaque, hwaddr offset,
                        uint64_t value, unsigned size)
 {
     Stm32Uart *s = (Stm32Uart *)opaque;
+    int start = (offset & 3) * 8;
+    int length = size * 8;
 
     stm32_rcc_check_periph_clk((Stm32Rcc *)s->stm32_rcc, s->periph, &s->busdev);
 
-    switch(size) {
-        case HALFWORD_ACCESS_SIZE:
-            stm32_uart_writeh(s, offset, value);
+    switch (offset & 0xfffffffc) {
+        case USART_SR_OFFSET:
+            stm32_uart_USART_SR_write(s,
+                  deposit64(stm32_uart_USART_SR_read(s), start, length, value));
             break;
-        case WORD_ACCESS_SIZE:
-            stm32_uart_writew(s, offset, value);
+        case USART_DR_OFFSET:
+            stm32_uart_USART_DR_write(s,
+                  deposit64(0, start, length, value));
+            break;
+        case USART_BRR_OFFSET:
+            stm32_uart_USART_BRR_write(s,
+                  deposit64(s->USART_BRR, start, length, value), false);
+            break;
+        case USART_CR1_OFFSET:
+            stm32_uart_USART_CR1_write(s,
+                  deposit64(s->USART_CR1, start, length, value), false);
+            break;
+        case USART_CR2_OFFSET:
+            stm32_uart_USART_CR2_write(s,
+                  deposit64(s->USART_CR2, start, length, value), false);
+            break;
+        case USART_CR3_OFFSET:
+            stm32_uart_USART_CR3_write(s,
+                  deposit64(s->USART_CR3, start, length, value), false);
+            break;
+        case USART_GTPR_OFFSET:
+            STM32_NOT_IMPL_REG(offset, 2);
             break;
         default:
-            STM32_BAD_REG(offset, size);
+            STM32_BAD_REG(offset, 2);
             break;
     }
 }
@@ -809,6 +848,8 @@ static void stm32_uart_write(void *opaque, hwaddr offset,
 static const MemoryRegionOps stm32_uart_ops = {
     .read = stm32_uart_read,
     .write = stm32_uart_write,
+    .valid.min_access_size = 2,
+    .valid.max_access_size = 4,
     .endianness = DEVICE_NATIVE_ENDIAN
 };
 
