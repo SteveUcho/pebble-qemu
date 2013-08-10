@@ -50,11 +50,6 @@ struct Stm32Exti {
     /* Inherited */
     SysBusDevice busdev;
 
-    /* Properties */
-    /* Array of Stm32Gpio pointers (one for each GPIO).  The QEMU property
-     * library expects this to be a void pointer. */
-    void *stm32_gpio_prop;
-
     /* Private */
     MemoryRegion iomem;
 
@@ -367,11 +362,6 @@ static int stm32_exti_init(SysBusDevice *dev)
     return 0;
 }
 
-static Property stm32_exti_properties[] = {
-    DEFINE_PROP_PTR("stm32_gpio", Stm32Exti, stm32_gpio_prop),
-    DEFINE_PROP_END_OF_LIST()
-};
-
 static void stm32_exti_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -379,11 +369,10 @@ static void stm32_exti_class_init(ObjectClass *klass, void *data)
 
     k->init = stm32_exti_init;
     dc->reset = stm32_exti_reset;
-    dc->props = stm32_exti_properties;
 }
 
 static TypeInfo stm32_exti_info = {
-    .name  = "stm32-exti",
+    .name  = TYPE_STM32_EXTI,
     .parent = TYPE_SYS_BUS_DEVICE,
     .instance_size  = sizeof(Stm32Exti),
     .class_init = stm32_exti_class_init
