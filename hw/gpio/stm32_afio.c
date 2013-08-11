@@ -84,8 +84,8 @@ static uint32_t stm32_afio_AFIO_MAPR_read(Stm32Afio *s)
 static void stm32_afio_AFIO_MAPR_write(Stm32Afio *s, uint32_t new_value,
                                         bool init)
 {
-    s->USART1_REMAP = GET_BIT_VALUE(s->AFIO_MAPR, AFIO_MAPR_USART1_REMAP_BIT);
-    s->USART2_REMAP = GET_BIT_VALUE(s->AFIO_MAPR, AFIO_MAPR_USART2_REMAP_BIT);
+    s->USART1_REMAP = extract32(s->AFIO_MAPR, AFIO_MAPR_USART1_REMAP_BIT, 1);
+    s->USART2_REMAP = extract32(s->AFIO_MAPR, AFIO_MAPR_USART2_REMAP_BIT, 1);
     s->USART3_REMAP = (new_value & AFIO_MAPR_USART3_REMAP_MASK) >> AFIO_MAPR_USART3_REMAP_START;
 }
 
@@ -133,7 +133,7 @@ static uint64_t stm32_afio_read(void *opaque, hwaddr offset,
 
     switch (offset) {
         case AFIO_EVCR_OFFSET:
-            STM32_NOT_IMPL_REG(offset, WORD_ACCESS_SIZE);
+            STM32_NOT_IMPL_REG(offset, size);
             break;
         case AFIO_MAPR_OFFSET:
             return stm32_afio_AFIO_MAPR_read(s);
@@ -146,7 +146,7 @@ static uint64_t stm32_afio_read(void *opaque, hwaddr offset,
         case AFIO_EXTICR4_OFFSET:
             return s->AFIO_EXTICR[3];
         default:
-            STM32_BAD_REG(offset, WORD_ACCESS_SIZE);
+            STM32_BAD_REG(offset, size);
             return 0;
     }
 }
@@ -159,7 +159,7 @@ static void stm32_afio_writew(Stm32Afio *s, hwaddr offset, uint64_t value)
 
     switch (offset) {
         case AFIO_EVCR_OFFSET:
-            STM32_NOT_IMPL_REG(offset, WORD_ACCESS_SIZE);
+            STM32_NOT_IMPL_REG(offset, size);
             break;
         case AFIO_MAPR_OFFSET:
             stm32_afio_AFIO_MAPR_write(s, value, false);
@@ -177,7 +177,7 @@ static void stm32_afio_writew(Stm32Afio *s, hwaddr offset, uint64_t value)
             stm32_afio_AFIO_EXTICR_write(s, 3, value, false);
             break;
         default:
-            STM32_BAD_REG(offset, WORD_ACCESS_SIZE);
+            STM32_BAD_REG(offset, size);
             break;
     }
 }

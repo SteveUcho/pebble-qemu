@@ -63,8 +63,6 @@ void stm32_hw_warn(const char *fmt, ...)
 #define stm32_unimp(x...) qemu_log_mask(LOG_UNIMP, x)
 
 
-
-
 /* PERIPHERALS - COMMON */
 /* Indexes used for accessing a GPIO array */
 #define STM32_GPIOA_INDEX 0
