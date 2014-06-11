@@ -1265,7 +1265,6 @@ static void memory_region_finalize(Object *obj)
 
 void memory_region_destroy(MemoryRegion *mr)
 {
-    object_unparent(OBJECT(mr));
 }
 
 
