@@ -417,6 +417,7 @@ static void qmp_response(JSONMessageParser *parser, QList *tokens)
 QDict *qtest_qmp_receive(QTestState *s)
 {
     QMPResponseParser qmp;
+    bool log = getenv("QTEST_LOG") != NULL;
 
     qmp.response = NULL;
     json_message_parser_init(&qmp.parser, qmp_response);
@@ -434,6 +435,9 @@ QDict *qtest_qmp_receive(QTestState *s)
             exit(1);
         }
 
+        if (log) {
+            len = write(2, &c, 1);
+        }
         json_message_parser_feed(&qmp.parser, &c, 1);
     }
     json_message_parser_destroy(&qmp.parser);
