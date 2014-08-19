@@ -139,23 +139,17 @@ static int bitband_init(SysBusDevice *dev)
     return 0;
 }
 
-static void armv7m_bitband_init(Object *parent)
+static void armv7m_bitband_init()
 {
     DeviceState *dev;
 
     dev = qdev_create(NULL, TYPE_BITBAND);
     qdev_prop_set_uint32(dev, "base", 0x20000000);
-    if(parent) {
-        object_property_add_child(parent, "bitband-sram", OBJECT(dev), NULL);
-    }
     qdev_init_nofail(dev);
     sysbus_mmio_map(SYS_BUS_DEVICE(dev), 0, 0x22000000);
 
     dev = qdev_create(NULL, TYPE_BITBAND);
     qdev_prop_set_uint32(dev, "base", 0x40000000);
-    if(parent) {
-        object_property_add_child(parent, "bitband-periph", OBJECT(dev), NULL);
-    }
     qdev_init_nofail(dev);
     sysbus_mmio_map(SYS_BUS_DEVICE(dev), 0, 0x42000000);
 }
@@ -173,15 +167,15 @@ static void armv7m_reset(void *opaque)
    flash_size and sram_size are in kb.
    Returns the NVIC array.  */
 
-qemu_irq *armv7m_init(Object *parent, MemoryRegion *system_memory,
+qemu_irq *armv7m_init(MemoryRegion *system_memory,
                       int flash_size, int sram_size,
                       const char *kernel_filename, const char *cpu_model) {
     ARMCPU *cpu;
-    return armv7m_translated_init(parent, address_space_mem, flash_size, sram_size,
+    return armv7m_translated_init(system_memory, flash_size, sram_size,
             kernel_filename, NULL, NULL, cpu_model, &cpu);
 }
 
-qemu_irq *armv7m_translated_init(Object *parent, MemoryRegion *address_space_mem,
+qemu_irq *armv7m_translated_init(MemoryRegion *address_space_mem,
                                  int flash_size, int sram_size,
                                  const char *kernel_filename,
                                  uint64_t (*translate_fn)(void *, uint64_t),
@@ -242,18 +236,18 @@ qemu_irq *armv7m_translated_init(Object *parent, MemoryRegion *address_space_mem
     }
 
     if (sram_size) {
-    memory_region_init_ram(sram, NULL, "armv7m.sram", sram_size);
-    vmstate_register_ram_global(sram);
-    memory_region_add_subregion(system_memory, 0x20000000, sram);
+        memory_region_init_ram(sram, NULL, "armv7m.sram", sram_size);
+        vmstate_register_ram_global(sram);
+        memory_region_add_subregion(system_memory, 0x20000000, sram);
     }
-    armv7m_bitband_init(parent);
+    armv7m_bitband_init();
 
     /* If this is an M4, create the core-coupled memory region */
     if (!strcmp(cpu_model, "cortex-m4")) {
         MemoryRegion *ccm = g_new(MemoryRegion, 1);
         memory_region_init_ram(ccm, NULL, "armv7m.ccm", 64 * 1024 /* 64K */);
         vmstate_register_ram_global(ccm);
-        memory_region_add_subregion(address_space_mem, 0x10000000, ccm);
+        memory_region_add_subregion(system_memory, 0x10000000, ccm);
     }
 
     nvic = qdev_create(NULL, "armv7m_nvic");
@@ -261,9 +255,6 @@ qemu_irq *armv7m_translated_init(Object *parent, MemoryRegion *address_space_mem
     uint32_t num_irqs = ((STM32_MAX_IRQ + 31) / 32) * 32;
     qdev_prop_set_uint32(nvic, "num-irq", num_irqs);
     env->nvic = nvic;
-    if(parent) {
-        object_property_add_child(parent, "nvic", OBJECT(nvic), NULL);
-    }
     qdev_init_nofail(nvic);
 
     // Connect the nvic's CPU #0 "parent_irq" output to the CPU's IRQ input handler
