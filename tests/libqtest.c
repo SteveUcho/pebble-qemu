@@ -197,6 +197,7 @@ QTestState *qtest_init(const char *extra_args, int num_serial_ports)
 
     s->qemu_pid = fork();
     if (s->qemu_pid == 0) {
+        setenv("QEMU_AUDIO_DRV", "none", true);
         command = g_strdup_printf("exec %s "
                                   "-qtest unix:%s,nowait "
                                   "-qtest-log %s "
