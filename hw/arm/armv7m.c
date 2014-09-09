@@ -229,14 +229,15 @@ qemu_irq *armv7m_translated_init(MemoryRegion *address_space_mem,
 
     /* Flash programming is done via the SCU, so pretend it is ROM.  */
     if (kernel_filename) {
-        memory_region_init_ram(flash, NULL, "armv7m.flash", flash_size);
+        memory_region_init_ram(flash, NULL, "armv7m.flash", flash_size,
+                           &error_abort);
         vmstate_register_ram_global(flash);
         memory_region_set_readonly(flash, true);
         memory_region_add_subregion(system_memory, 0, flash);
     }
 
     if (sram_size) {
-        memory_region_init_ram(sram, NULL, "armv7m.sram", sram_size);
+        memory_region_init_ram(sram, NULL, "armv7m.sram", sram_size, &error_abort);
         vmstate_register_ram_global(sram);
         memory_region_add_subregion(system_memory, 0x20000000, sram);
     }
@@ -292,7 +293,7 @@ qemu_irq *armv7m_translated_init(MemoryRegion *address_space_mem,
     /* Hack to map an additional page of ram at the top of the address
        space.  This stops qemu complaining about executing code outside RAM
        when returning from an exception.  */
-    memory_region_init_ram(hack, NULL, "armv7m.hack", 0x1000);
+    memory_region_init_ram(hack, NULL, "armv7m.hack", 0x1000, &error_abort);
     vmstate_register_ram_global(hack);
     memory_region_add_subregion(system_memory, 0xfffff000, hack);
 
