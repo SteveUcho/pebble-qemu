@@ -323,7 +323,7 @@ static void stm32_uart_tx_complete(Stm32Uart *s)
 /* Start transmitting a character. */
 static void stm32_uart_start_tx(Stm32Uart *s, uint32_t value)
 {
-    uint64_t curr_time = qemu_get_clock_ns(vm_clock);
+    uint64_t curr_time = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
     uint8_t ch = value; //This will truncate the ninth bit
 
     /* Reset the Transmission Complete flag to indicate a transmit is in
@@ -343,7 +343,7 @@ static void stm32_uart_start_tx(Stm32Uart *s, uint32_t value)
     stm32_uart_tx_complete(s);
 #else
     /* Otherwise, start the transmit delay timer. */
-    qemu_mod_timer(s->tx_timer,  curr_time + s->ns_per_char);
+    timer_mod(s->tx_timer,  curr_time + s->ns_per_char);
 #endif
 }
 
@@ -418,7 +418,7 @@ static void stm32_uart_event(void *opaque, int event)
 static void stm32_uart_receive(void *opaque, const uint8_t *buf, int size)
 {
     Stm32Uart *s = (Stm32Uart *)opaque;
-    uint64_t curr_time = qemu_get_clock_ns(vm_clock);
+    uint64_t curr_time = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
 
     assert(size > 0);
 
@@ -446,7 +446,7 @@ static void stm32_uart_receive(void *opaque, const uint8_t *buf, int size)
 #else
     /* Indicate the module is receiving and start the delay. */
     s->receiving = true;
-    qemu_mod_timer(s->rx_timer,  curr_time + s->ns_per_char);
+    timer_mod(s->rx_timer,  curr_time + s->ns_per_char);
 #endif
 }
 
@@ -896,9 +896,11 @@ static int stm32_uart_init(SysBusDevice *dev)
     sysbus_init_irq(dev, &s->irq);
 
     s->rx_timer =
-          qemu_new_timer_ns(vm_clock,(QEMUTimerCB *)stm32_uart_rx_timer_expire, s);
+        timer_new_ns(QEMU_CLOCK_VIRTUAL,
+                  (QEMUTimerCB *)stm32_uart_rx_timer_expire, s);
     s->tx_timer =
-          qemu_new_timer_ns(vm_clock,(QEMUTimerCB *)stm32_uart_tx_timer_expire, s);
+        timer_new_ns(QEMU_CLOCK_VIRTUAL,
+                  (QEMUTimerCB *)stm32_uart_tx_timer_expire, s);
 
     /* Register handlers to handle updates to the USART's peripheral clock. */
     clk_irq =
