@@ -136,7 +136,6 @@ static QEMUMachine stm32_p103_machine = {
     .name = "stm32-p103",
     .desc = "Olimex STM32 p103 Dev Board",
     .init = stm32_p103_init,
-    DEFAULT_MACHINE_OPTIONS,
 };
 
 
