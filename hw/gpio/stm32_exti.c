@@ -314,7 +314,7 @@ static const MemoryRegionOps stm32_exti_ops = {
 
 static void stm32_exti_reset(DeviceState *dev)
 {
-    Stm32Exti *s = FROM_SYSBUS(Stm32Exti, SYS_BUS_DEVICE(dev));
+    Stm32Exti *s = STM32_EXTI(dev);
 
     s->EXTI_IMR = 0x00000000;
     s->EXTI_RTSR = 0x00000000;
@@ -351,7 +351,7 @@ static int stm32_exti_init(SysBusDevice *dev)
 {
     int i;
 
-    Stm32Exti *s = FROM_SYSBUS(Stm32Exti, dev);
+    Stm32Exti *s = STM32_EXTI(dev);
 
     s->stm32_gpio = (stm32f2xx_gpio **)s->stm32_gpio_prop;
 
