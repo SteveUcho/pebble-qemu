@@ -61,6 +61,8 @@ struct SysBusDevice {
 /* Macros to compensate for lack of type inheritance in C.  */
 #define FROM_SYSBUS(type, dev) DO_UPCAST(type, busdev, dev)
 
+typedef int FindSysbusDeviceFunc(SysBusDevice *sbdev, void *opaque);
+
 void sysbus_init_mmio(SysBusDevice *dev, MemoryRegion *memory);
 MemoryRegion *sysbus_mmio_get_region(SysBusDevice *dev, int n);
 void sysbus_init_irq(SysBusDevice *dev, qemu_irq *p);
@@ -75,6 +77,9 @@ void sysbus_mmio_map_overlap(SysBusDevice *dev, int n, hwaddr addr,
 void sysbus_add_io(SysBusDevice *dev, hwaddr addr,
                    MemoryRegion *mem);
 MemoryRegion *sysbus_address_space(SysBusDevice *dev);
+
+/* Call func for every dynamically created sysbus device in the system */
+void foreach_dynamic_sysbus_device(FindSysbusDeviceFunc *func, void *opaque);
 
 /* Legacy helper function for creating devices.  */
 DeviceState *sysbus_create_varargs(const char *name,
