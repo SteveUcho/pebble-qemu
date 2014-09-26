@@ -149,16 +149,6 @@ void qemu_irq_intercept_in(qemu_irq *gpio_in, qemu_irq_handler handler,
     }
 }
 
-void qemu_irq_intercept_out(qemu_irq **gpio_out, qemu_irq_handler handler,
-                            int id, int n)
-{
-    IRQInterceptData *intercept_data = g_malloc0(sizeof(IRQInterceptData));
-    qemu_irq *old_irqs = *gpio_out;
-    intercept_data->id = id;
-    intercept_data->old_irqs = old_irqs;
-    *gpio_out = qemu_allocate_irqs(handler, intercept_data, n);
-}
-
 static const TypeInfo irq_type_info = {
    .name = TYPE_IRQ,
    .parent = TYPE_OBJECT,
