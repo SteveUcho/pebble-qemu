@@ -51,7 +51,8 @@
 #define EXCP_EXCEPTION_EXIT  8   /* Return from v7M exception.  */
 #define EXCP_KERNEL_TRAP     9   /* Jumped to kernel code page.  */
 #define EXCP_STREX          10
-#define EXCP_WKUP           11   /* Wakeup from standby mode */
+#define EXCP_HVC            11   /* HyperVisor Call */
+#define EXCP_WKUP           16   /* Wakeup from standby mode */
 
 #define ARMV7M_EXCP_RESET   1
 #define ARMV7M_EXCP_NMI     2
