@@ -52,6 +52,8 @@
 #define EXCP_KERNEL_TRAP     9   /* Jumped to kernel code page.  */
 #define EXCP_STREX          10
 #define EXCP_HVC            11   /* HyperVisor Call */
+#define EXCP_HYP_TRAP       12
+
 #define EXCP_WKUP           16   /* Wakeup from standby mode */
 
 #define ARMV7M_EXCP_RESET   1
