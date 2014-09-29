@@ -41,7 +41,9 @@ static void arm_cpu_set_pc(CPUState *cs, vaddr value)
 static bool arm_cpu_has_work(CPUState *cs)
 {
     return cs->interrupt_request &
-        (CPU_INTERRUPT_FIQ | CPU_INTERRUPT_HARD | CPU_INTERRUPT_EXITTB | CPU_INTERRUPT_WKUP);
+        (CPU_INTERRUPT_FIQ | CPU_INTERRUPT_HARD
+         | CPU_INTERRUPT_VFIQ | CPU_INTERRUPT_VIRQ
+         | CPU_INTERRUPT_EXITTB | CPU_INTERRUPT_WKUP);
 }
 
 static void cp_reg_reset(gpointer key, gpointer value, gpointer opaque)
@@ -210,6 +212,18 @@ bool arm_cpu_exec_interrupt(CPUState *cs, int interrupt_request)
         cc->do_interrupt(cs);
         ret = true;
     }
+    if (interrupt_request & CPU_INTERRUPT_VIRQ
+        && arm_excp_unmasked(cs, EXCP_VIRQ)) {
+        cs->exception_index = EXCP_VIRQ;
+        cc->do_interrupt(cs);
+        ret = true;
+    }
+    if (interrupt_request & CPU_INTERRUPT_VFIQ
+        && arm_excp_unmasked(cs, EXCP_VFIQ)) {
+        cs->exception_index = EXCP_VFIQ;
+        cc->do_interrupt(cs);
+        ret = true;
+    }
 
     return ret;
 }
@@ -218,28 +232,31 @@ bool arm_cpu_exec_interrupt(CPUState *cs, int interrupt_request)
 static void arm_cpu_set_irq(void *opaque, int irq, int level)
 {
     ARMCPU *cpu = opaque;
+    CPUARMState *env = &cpu->env;
     CPUState *cs = CPU(cpu);
+    static const int mask[] = {
+        [ARM_CPU_IRQ] = CPU_INTERRUPT_HARD,
+        [ARM_CPU_FIQ] = CPU_INTERRUPT_FIQ,
+        [ARM_CPU_VIRQ] = CPU_INTERRUPT_VIRQ,
+        [ARM_CPU_VFIQ] = CPU_INTERRUPT_VFIQ,
+        [ARM_CPU_WKUP] = CPU_INTERRUPT_WKUP
+    };
 
     switch (irq) {
+    case ARM_CPU_VIRQ:
+    case ARM_CPU_VFIQ:
+        if (!arm_feature(env, ARM_FEATURE_EL2)) {
+            hw_error("%s: Virtual interrupt line %d with no EL2 support\n",
+                     __func__, irq);
+        }
+        /* fall through */
     case ARM_CPU_IRQ:
-        if (level) {
-            cpu_interrupt(cs, CPU_INTERRUPT_HARD);
-        } else {
-            cpu_reset_interrupt(cs, CPU_INTERRUPT_HARD);
-        }
-        break;
     case ARM_CPU_FIQ:
-        if (level) {
-            cpu_interrupt(cs, CPU_INTERRUPT_FIQ);
-        } else {
-            cpu_reset_interrupt(cs, CPU_INTERRUPT_FIQ);
-        }
-        break;
     case ARM_CPU_WKUP:
         if (level) {
-            cpu_interrupt(cs, CPU_INTERRUPT_WKUP);
+            cpu_interrupt(cs, mask[irq]);
         } else {
-            cpu_reset_interrupt(cs, CPU_INTERRUPT_WKUP);
+            cpu_reset_interrupt(cs, mask[irq]);
         }
         break;
     default:
@@ -289,9 +306,9 @@ static void arm_cpu_initfn(Object *obj)
 #ifndef CONFIG_USER_ONLY
     /* Our inbound IRQ and FIQ lines */
     if (kvm_enabled()) {
-        qdev_init_gpio_in(DEVICE(cpu), arm_cpu_kvm_set_irq, 3);
+        qdev_init_gpio_in(DEVICE(cpu), arm_cpu_kvm_set_irq, 5);
     } else {
-        qdev_init_gpio_in(DEVICE(cpu), arm_cpu_set_irq, 3);
+        qdev_init_gpio_in(DEVICE(cpu), arm_cpu_set_irq, 5);
     }
 
     cpu->gt_timer[GTIMER_PHYS] = timer_new(QEMU_CLOCK_VIRTUAL, GTIMER_SCALE,
