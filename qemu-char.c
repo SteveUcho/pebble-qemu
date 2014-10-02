@@ -2509,7 +2509,20 @@ typedef struct {
     SocketAddress *addr;
     bool is_listen;
     bool is_telnet;
+
+    guint reconnect_timer;
+    int64_t reconnect_time;
 } TCPCharDriver;
+
+static gboolean socket_reconnect_timeout(gpointer opaque);
+
+static void qemu_chr_socket_restart_timer(CharDriverState *chr)
+{
+    TCPCharDriver *s = chr->opaque;
+    assert(s->connected == 0);
+    s->reconnect_timer = g_timeout_add_seconds(s->reconnect_time,
+                                               socket_reconnect_timeout, chr);
+}
 
 static gboolean tcp_chr_accept(GIOChannel *chan, GIOCondition cond, void *opaque);
 
@@ -2792,6 +2805,9 @@ static void tcp_chr_disconnect(CharDriverState *chr)
     SocketAddress_to_str(chr->filename, CHR_MAX_FILENAME_SIZE,
                          "disconnected:", s->addr, s->is_listen, s->is_telnet);
     qemu_chr_be_event(chr, CHR_EVENT_CLOSED);
+    if (s->reconnect_time) {
+        qemu_chr_socket_restart_timer(chr);
+    }
 }
 
 static gboolean tcp_chr_read(GIOChannel *chan, GIOCondition cond, void *opaque)
@@ -2972,6 +2988,10 @@ static void tcp_chr_close(CharDriverState *chr)
     TCPCharDriver *s = chr->opaque;
     int i;
 
+    if (s->reconnect_timer) {
+        g_source_remove(s->reconnect_timer);
+        s->reconnect_timer = 0;
+    }
     qapi_free_SocketAddress(s->addr);
     if (s->fd >= 0) {
         remove_fd_in_watch(chr);
@@ -3021,6 +3041,18 @@ static void qemu_chr_finish_socket_connection(CharDriverState *chr, int fd)
     }
 }
 
+static void qemu_chr_socket_connected(int fd, void *opaque)
+{
+    CharDriverState *chr = opaque;
+
+    if (fd < 0) {
+        qemu_chr_socket_restart_timer(chr);
+        return;
+    }
+
+    qemu_chr_finish_socket_connection(chr, fd);
+}
+
 static bool qemu_chr_open_socket_fd(CharDriverState *chr, Error **errp)
 {
     TCPCharDriver *s = chr->opaque;
@@ -3028,7 +3060,10 @@ static bool qemu_chr_open_socket_fd(CharDriverState *chr, Error **errp)
 
     if (s->is_listen) {
         fd = socket_listen(s->addr, errp);
-    } else  {
+    } else if (s->reconnect_time) {
+        fd = socket_connect(s->addr, errp, qemu_chr_socket_connected, chr);
+        return fd >= 0;
+    } else {
         fd = socket_connect(s->addr, errp, NULL, NULL);
     }
     if (fd < 0) {
@@ -3456,6 +3491,7 @@ static void qemu_chr_parse_socket(QemuOpts *opts, ChardevBackend *backend,
     bool is_waitconnect = is_listen && qemu_opt_get_bool(opts, "wait", true);
     bool is_telnet      = qemu_opt_get_bool(opts, "telnet", false);
     bool do_nodelay     = !qemu_opt_get_bool(opts, "delay", true);
+    int64_t reconnect   = qemu_opt_get_number(opts, "reconnect", 0);
     const char *path = qemu_opt_get(opts, "path");
     const char *host = qemu_opt_get(opts, "host");
     const char *port = qemu_opt_get(opts, "port");
@@ -3482,6 +3518,8 @@ static void qemu_chr_parse_socket(QemuOpts *opts, ChardevBackend *backend,
     backend->socket->telnet = is_telnet;
     backend->socket->has_wait = true;
     backend->socket->wait = is_waitconnect;
+    backend->socket->has_reconnect = true;
+    backend->socket->reconnect = reconnect;
 
     addr = g_new0(SocketAddress, 1);
     if (path) {
@@ -3881,6 +3919,9 @@ QemuOptsList qemu_chardev_opts = {
             .name = "delay",
             .type = QEMU_OPT_BOOL,
         },{
+            .name = "reconnect",
+            .type = QEMU_OPT_NUMBER,
+        },{
             .name = "telnet",
             .type = QEMU_OPT_BOOL,
         },{
@@ -4024,6 +4065,26 @@ static CharDriverState *qmp_chardev_open_parallel(ChardevHostdev *parallel,
 
 #endif /* WIN32 */
 
+static gboolean socket_reconnect_timeout(gpointer opaque)
+{
+    CharDriverState *chr = opaque;
+    TCPCharDriver *s = chr->opaque;
+    Error *err;
+
+    s->reconnect_timer = 0;
+
+    if (chr->be_open) {
+        return false;
+    }
+
+    if (!qemu_chr_open_socket_fd(chr, &err)) {
+        error_report("Unable to connect to char device %s\n", chr->label);
+        qemu_chr_socket_restart_timer(chr);
+    }
+
+    return false;
+}
+
 static CharDriverState *qmp_chardev_open_socket(ChardevSocket *sock,
                                                 Error **errp)
 {
@@ -4034,6 +4095,7 @@ static CharDriverState *qmp_chardev_open_socket(ChardevSocket *sock,
     bool is_listen      = sock->has_server  ? sock->server  : true;
     bool is_telnet      = sock->has_telnet  ? sock->telnet  : false;
     bool is_waitconnect = sock->has_wait    ? sock->wait    : false;
+    int64_t reconnect   = sock->has_reconnect ? sock->reconnect : 0;
 
     chr = qemu_chr_alloc();
     s = g_malloc0(sizeof(TCPCharDriver));
@@ -4066,13 +4128,19 @@ static CharDriverState *qmp_chardev_open_socket(ChardevSocket *sock,
         if (is_telnet) {
             s->do_telnetopt = 1;
         }
+    } else if (reconnect > 0) {
+        s->reconnect_time = reconnect;
     }
 
     if (!qemu_chr_open_socket_fd(chr, errp)) {
-        g_free(s);
-        g_free(chr->filename);
-        g_free(chr);
-        return NULL;
+        if (s->reconnect_time) {
+            qemu_chr_socket_restart_timer(chr);
+        } else {
+            g_free(s);
+            g_free(chr->filename);
+            g_free(chr);
+            return NULL;
+        }
     }
 
     if (is_listen && is_waitconnect) {
