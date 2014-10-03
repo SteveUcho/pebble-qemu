@@ -305,11 +305,11 @@ static void pc_init_pci(MachineState *machine)
 
 static void pc_compat_2_1(MachineState *machine)
 {
-    smbios_uuid_encoded = false;
 }
 
 static void pc_compat_2_0(MachineState *machine)
 {
+    pc_compat_2_1(machine);
     pc_compat_2_1(machine);
     /* This value depends on the actual DSDT and SSDT compiled into
      * the source QEMU; unfortunately it depends on the binary and
@@ -373,6 +373,12 @@ static void pc_compat_1_2(MachineState *machine)
 {
     pc_compat_1_3(machine);
     x86_cpu_compat_disable_kvm_features(FEAT_KVM, KVM_FEATURE_PV_EOI);
+}
+
+static void pc_init_pci_2_1(MachineState *machine)
+{
+    pc_compat_2_1(machine);
+    pc_init_pci(machine);
 }
 
 static void pc_init_pci_2_1(MachineState *machine)
@@ -488,6 +494,7 @@ static QEMUMachine pc_i440fx_machine_v2_2 = {
 static QEMUMachine pc_i440fx_machine_v2_1 = {
     PC_I440FX_2_1_MACHINE_OPTIONS,
     .name = "pc-i440fx-2.1",
+    .init = pc_init_pci_2_1,
     .init = pc_init_pci_2_1,
     .compat_props = (GlobalProperty[]) {
         HW_COMPAT_2_1,

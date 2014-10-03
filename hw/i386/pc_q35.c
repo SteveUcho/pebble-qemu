@@ -284,11 +284,11 @@ static void pc_q35_init(MachineState *machine)
 
 static void pc_compat_2_1(MachineState *machine)
 {
-    smbios_uuid_encoded = false;
 }
 
 static void pc_compat_2_0(MachineState *machine)
 {
+    pc_compat_2_1(machine);
     pc_compat_2_1(machine);
     smbios_legacy_mode = true;
     has_reserved_memory = false;
@@ -321,6 +321,12 @@ static void pc_compat_1_4(MachineState *machine)
     pc_compat_1_5(machine);
     x86_cpu_compat_set_features("n270", FEAT_1_ECX, 0, CPUID_EXT_MOVBE);
     x86_cpu_compat_set_features("Westmere", FEAT_1_ECX, 0, CPUID_EXT_PCLMULQDQ);
+}
+
+static void pc_q35_init_2_1(MachineState *machine)
+{
+    pc_compat_2_1(machine);
+    pc_q35_init(machine);
 }
 
 static void pc_q35_init_2_1(MachineState *machine)
@@ -385,6 +391,7 @@ static QEMUMachine pc_q35_machine_v2_2 = {
 static QEMUMachine pc_q35_machine_v2_1 = {
     PC_Q35_2_1_MACHINE_OPTIONS,
     .name = "pc-q35-2.1",
+    .init = pc_q35_init_2_1,
     .init = pc_q35_init_2_1,
     .compat_props = (GlobalProperty[]) {
         HW_COMPAT_2_1,
