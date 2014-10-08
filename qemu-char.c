@@ -2517,6 +2517,7 @@ typedef struct {
 
     guint reconnect_timer;
     int64_t reconnect_time;
+    bool connect_err_reported;
 } TCPCharDriver;
 
 static gboolean socket_reconnect_timeout(gpointer opaque);
@@ -2527,6 +2528,19 @@ static void qemu_chr_socket_restart_timer(CharDriverState *chr)
     assert(s->connected == 0);
     s->reconnect_timer = g_timeout_add_seconds(s->reconnect_time,
                                                socket_reconnect_timeout, chr);
+}
+
+static void check_report_connect_error(CharDriverState *chr,
+                                       Error *err)
+{
+    TCPCharDriver *s = chr->opaque;
+
+    if (!s->connect_err_reported) {
+        error_report("Unable to connect character device %s: %s",
+                     chr->label, error_get_pretty(err));
+        s->connect_err_reported = true;
+    }
+    qemu_chr_socket_restart_timer(chr);
 }
 
 static gboolean tcp_chr_accept(GIOChannel *chan, GIOCondition cond, void *opaque);
@@ -3053,14 +3067,14 @@ static void qemu_chr_finish_socket_connection(CharDriverState *chr, int fd)
 static void qemu_chr_socket_connected(int fd, Error *err, void *opaque)
 {
     CharDriverState *chr = opaque;
+    TCPCharDriver *s = chr->opaque;
 
     if (fd < 0) {
-        error_report("Unable to connect to char device %s: %s",
-                     chr->label, error_get_pretty(err));
-        qemu_chr_socket_restart_timer(chr);
+        check_report_connect_error(chr, err);
         return;
     }
 
+    s->connect_err_reported = false;
     qemu_chr_finish_socket_connection(chr, fd);
 }
 
@@ -4076,11 +4090,19 @@ static CharDriverState *qmp_chardev_open_parallel(ChardevHostdev *parallel,
 
 #endif /* WIN32 */
 
+static void socket_try_connect(CharDriverState *chr)
+{
+    Error *err = NULL;
+
+    if (!qemu_chr_open_socket_fd(chr, &err)) {
+        check_report_connect_error(chr, err);
+    }
+}
+
 static gboolean socket_reconnect_timeout(gpointer opaque)
 {
     CharDriverState *chr = opaque;
     TCPCharDriver *s = chr->opaque;
-    Error *err;
 
     s->reconnect_timer = 0;
 
@@ -4088,11 +4110,7 @@ static gboolean socket_reconnect_timeout(gpointer opaque)
         return false;
     }
 
-    if (!qemu_chr_open_socket_fd(chr, &err)) {
-        error_report("Unable to connect to char device %s: %s\n",
-                     chr->label, error_get_pretty(err));
-        qemu_chr_socket_restart_timer(chr);
-    }
+    socket_try_connect(chr);
 
     return false;
 }
@@ -4144,15 +4162,13 @@ static CharDriverState *qmp_chardev_open_socket(ChardevSocket *sock,
         s->reconnect_time = reconnect;
     }
 
-    if (!qemu_chr_open_socket_fd(chr, errp)) {
-        if (s->reconnect_time) {
-            qemu_chr_socket_restart_timer(chr);
-        } else {
-            g_free(s);
-            g_free(chr->filename);
-            g_free(chr);
-            return NULL;
-        }
+    if (s->reconnect_time) {
+        socket_try_connect(chr);
+    } else if (!qemu_chr_open_socket_fd(chr, errp)) {
+        g_free(s);
+        g_free(chr->filename);
+        g_free(chr);
+        return NULL;
     }
 
     if (is_listen && is_waitconnect) {
