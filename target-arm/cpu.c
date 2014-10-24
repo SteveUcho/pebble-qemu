@@ -1119,7 +1119,6 @@ static void arm_cpu_class_init(ObjectClass *oc, void *data)
 
     cc->class_by_name = arm_cpu_class_by_name;
     cc->has_work = arm_cpu_has_work;
-    cc->do_interrupt = arm_cpu_do_interrupt;
     cc->cpu_exec_interrupt = arm_cpu_exec_interrupt;
     cc->dump_state = arm_cpu_dump_state;
     cc->set_pc = arm_cpu_set_pc;
@@ -1128,7 +1127,7 @@ static void arm_cpu_class_init(ObjectClass *oc, void *data)
 #ifdef CONFIG_USER_ONLY
     cc->handle_mmu_fault = arm_cpu_handle_mmu_fault;
 #else
-    cc->do_unassigned_access = arm_cpu_unassigned_access;
+    cc->do_interrupt = arm_cpu_do_interrupt;
     cc->get_phys_page_debug = arm_cpu_get_phys_page_debug;
     cc->vmsd = &vmstate_arm_cpu;
 #endif
