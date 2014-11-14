@@ -100,6 +100,14 @@ struct Stm32Uart {
         void (*check_tx_pin_callback)(Stm32Uart *);
     };
 
+    /* Checks the USART transmit pin's GPIO settings.  If the GPIO is not configured
+     * properly, a hardware error is triggered.
+     */
+    union {
+        void *check_tx_pin_prop;
+        void (*check_tx_pin_callback)(Stm32Uart *);
+    };
+
     /* Private */
     MemoryRegion iomem;
 
