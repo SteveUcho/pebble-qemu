@@ -20,6 +20,7 @@
  */
 
 #include "hw/arm/stm32.h"
+#include "hw/arm/stm32f4xx.h"
 #include "qemu/bitops.h"
 
 

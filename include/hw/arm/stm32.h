@@ -110,28 +110,18 @@ typedef int32_t stm32_periph_t;
 
 
 /* IRQs */
+#define STM32_PVD_IRQ 1
+#define STM32_TAMP_STAMP_IRQ 2
+#define STM32_RTC_WKUP_IRQ 3
 #define STM32_RCC_IRQ 5
-#define STM32_DMA1_STREAM4_IRQ 15
-
-#define STM32_UART1_IRQ 37
-#define STM32_UART2_IRQ 38
-#define STM32_UART3_IRQ 39
-#define STM32_UART4_IRQ 52
-#define STM32_UART5_IRQ 53
-#define STM32_UART6_IRQ 71
-
 #define STM32_EXTI0_IRQ 6
 #define STM32_EXTI1_IRQ 7
 #define STM32_EXTI2_IRQ 8
 #define STM32_EXTI3_IRQ 9
 #define STM32_EXTI4_IRQ 10
-#define STM32_EXTI9_5_IRQ 23
-#define STM32_EXTI15_10_IRQ 40
-#define STM32_PVD_IRQ 1
-#define STM32_RTCAlarm_IRQ 41
-#define STM32_OTG_FS_WKUP_IRQ 42
-#define STM32_ETH_WKUP_IRQ 62
+#define STM32_DMA1_STREAM4_IRQ 15
 
+#define STM32_EXTI9_5_IRQ 23
 #define STM32_TIM1_BRK_TIM9_IRQ 24
 #define STM32_TIM1_UP_TIM10_IRQ 25
 #define STM32_TIM1_TRG_COM_TIM11_IRQ 26
@@ -140,7 +130,25 @@ typedef int32_t stm32_periph_t;
 #define STM32_TIM3_IRQ 29
 #define STM32_TIM4_IRQ 30
 
+#define STM32_SPI1_IRQ 35
+#define STM32_SPI2_IRQ 36
 
+#define STM32_UART1_IRQ 37
+#define STM32_UART2_IRQ 38
+#define STM32_UART3_IRQ 39
+#define STM32_EXTI15_10_IRQ 40
+#define STM32_RTCAlarm_IRQ 41
+#define STM32_OTG_FS_WKUP_IRQ 42
+
+#define STM32_SPI3_IRQ 51
+#define STM32_UART4_IRQ 52
+#define STM32_UART5_IRQ 53
+
+#define STM32_ETH_WKUP_IRQ 62
+
+#define STM32_UART6_IRQ 71
+
+#define STM32_MAX_IRQ  81
 
 /* EXTI */
 typedef struct Stm32Exti Stm32Exti;
@@ -301,6 +309,18 @@ void stm32f2xx_init(
                     uint32_t osc_freq,
                     uint32_t osc32_freq,
                     struct stm32f2xx *stm);
+
+struct stm32f4xx;
+void stm32f4xx_init(
+                    ram_addr_t flash_size,
+                    ram_addr_t ram_size,
+                    const char *kernel_filename,
+                    Stm32Gpio **stm32_gpio,
+                    Stm32Uart **stm32_uart,
+                    uint32_t osc_freq,
+                    uint32_t osc32_freq,
+                    struct stm32f4xx *stm);
+
 #endif /* STM32_H */
 
 
