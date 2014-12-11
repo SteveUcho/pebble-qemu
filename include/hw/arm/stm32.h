@@ -148,7 +148,11 @@ typedef int32_t stm32_periph_t;
 
 #define STM32_UART6_IRQ 71
 
-#define STM32_MAX_IRQ  81
+#define STM32_SPI4_IRQ 84
+#define STM32_SPI5_IRQ 85
+#define STM32_SPI6_IRQ 86
+
+#define STM32_MAX_IRQ  90
 
 /* EXTI */
 typedef struct Stm32Exti Stm32Exti;
