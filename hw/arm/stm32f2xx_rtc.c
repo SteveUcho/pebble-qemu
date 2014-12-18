@@ -90,6 +90,111 @@ f2xx_period(f2xx_rtc *s)
     return 1000000000LL * prescale / 32768;
 }
 
+static void
+f2xx_rtc_write(void *arg, hwaddr addr, uint64_t data, unsigned int size)
+{
+    f2xx_rtc *s = arg;
+    int offset = addr & 0x3;
+    bool    compute_new_target_offset = false;
+
+    //DPRINTF("%s: addr: 0x%llx, data: 0x%llx, size: %d\n", __func__, addr, data, size);
+
+    addr >>= 2;
+    if (addr >= R_RTC_MAX) {
+        qemu_log_mask(LOG_GUEST_ERROR, "invalid write f2xx rtc register 0x%x\n",
+          (unsigned int)addr << 2);
+        return;
+    }
+
+    /* Special case for write protect state machine. */
+    if (addr == R_RTC_WPR) {
+        if (offset > 0) {
+            return;
+        }
+        data &= 0xff;
+        if ((s->wp_count == 0 && data == 0xca) ||
+          (s->wp_count == 1 && data == 0x53)) {
+            s->wp_count++;
+        } else {
+            s->wp_count = 0;
+        }
+        s->regs[addr] = data;
+        return;
+    }
+
+    switch(size) {
+    case 1:
+        data = (s->regs[addr] & ~(0xff << (offset * 8))) | data << (offset * 8);
+        break;
+    case 2:
+        data = (s->regs[addr] & ~(0xffff << (offset * 8))) | data << (offset * 8);
+        break;
+    case 4:
+        break;
+    default:
+        abort();
+    }
+    if (addr >= R_RTC_BKPxR && addr <= R_RTC_BKPxR_LAST) {
+        s->regs[addr] = data;
+        return;
+    }
+    /* Write protect */
+    if (s->wp_count < 2 && addr != R_RTC_TAFCR && addr != R_RTC_ISR
+            && addr != R_RTC_WPR) {
+        qemu_log_mask(LOG_GUEST_ERROR, "f2xx rtc write reg 0x%x+%u without wp disable\n",
+                      (unsigned int)addr << 2, offset);
+        return;
+    }
+    switch(addr) {
+    case R_RTC_TR:
+    case R_RTC_DR:
+        compute_new_target_offset = true;
+        break;
+    case R_RTC_CR:
+        break;
+    case R_RTC_ISR:
+        if ((data & 1<<8) == 0 && (s->regs[R_RTC_ISR] & 1<<8) != 0) {
+            DEBUG_ALARM("f2xx rtc isr lowered\n");
+            qemu_irq_lower(s->irq[0]);
+        }
+        break;
+    case R_RTC_PRER:
+        /*
+         * XXX currently updates upon next clock tick.  To do this properly we
+         * would need to account for the time already elapsed, and then update
+         * the timer for the remaining period.
+         */
+        break;
+    case R_RTC_ALRMAR:
+    case R_RTC_ALRMBR:
+        break;
+    case R_RTC_TAFCR:
+        if (data) {
+            qemu_log_mask(LOG_UNIMP,
+              "f2xx rtc unimplemented write TAFCR+%u size %u val %u\n",
+              offset, size, (unsigned int)data);
+        }
+        break;
+    default:
+        qemu_log_mask(LOG_UNIMP, "f2xx rtc unimplemented write 0x%x+%u size %u val 0x%x\n",
+          (unsigned int)addr << 2, offset, size, (unsigned int)data);
+    }
+    s->regs[addr] = data;
+
+
+    // Do we need to recompute the host to target offset?
+    if (compute_new_target_offset) {
+        struct tm target_tm;
+        // Recompute ticks based on the modified contents of the TR and DR registers
+        s->ticks = f2xx_rtc_get_current_target_time(s, &target_tm);
+        // Update the host to target offset as well
+        s->host_to_target_offset_us = f2xx_rtc_compute_host_to_target_offset(s, f2xx_period(s),
+                                          s->ticks);
+    }
+
+}
+
+
 static bool
 f2xx_alarm_match(f2xx_rtc *s, uint32_t alarm_reg)
 {
@@ -137,7 +242,7 @@ f2xx_alarm_check(f2xx_rtc *s, int unit)
         if (f2xx_alarm_match(s, s->regs[R_RTC_ALRMAR + unit])) {
             isr |= 1<<(8 + unit);
             s->regs[R_RTC_ISR] = isr;
-            DEBUG_ALARM("f2xx rtc alarm activated 0x%x 0x%x\n", isr, cr);
+            //DPRINTF("f2xx rtc alarm activated 0x%x 0x%x\n", isr, cr);
         }
     }
     qemu_set_irq(s->irq[unit], cr & 1<<(12 + unit) && isr & 1<<(8 + unit));
