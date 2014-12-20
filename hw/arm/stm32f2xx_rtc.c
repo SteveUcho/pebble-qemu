@@ -28,9 +28,14 @@
 #define R_RTC_TR     (0x00 / 4)
 #define R_RTC_DR     (0x04 / 4)
 #define R_RTC_CR     (0x08 / 4)
+#define R_RTC_CR_WUTE   0x00000400
+#define R_RTC_CR_WUTIE  0x00004000
+
 #define R_RTC_ISR    (0x0c / 4)
 #define R_RTC_ISR_RESET 0x00000007
-#define R_RTC_ISR_RSF 0x00000020
+#define R_RTC_ISR_RSF   0x00000020
+#define R_RTC_ISR_WUT   0x00000400
+
 #define R_RTC_PRER   (0x10 / 4)
 #define R_RTC_PRER_PREDIV_A_MASK 0x7f
 #define R_RTC_PRER_PREDIV_A_SHIFT 16
@@ -85,6 +90,8 @@ f2xx_period(f2xx_rtc *s)
     uint32_t prer = s->regs[R_RTC_PRER];
     unsigned int prescale;
 
+    // NOTE: We are making the assumption here, as in f2xx_wut_period_ns, that RTC_CLK
+    // is the 32768 LSE clock
     prescale = (((prer >> R_RTC_PRER_PREDIV_A_SHIFT) & R_RTC_PRER_PREDIV_A_MASK) + 1) *
                (((prer >> R_RTC_PRER_PREDIV_S_SHIFT) & R_RTC_PRER_PREDIV_S_MASK) + 1);
     return 1000000000LL * prescale / 32768;
@@ -96,6 +103,7 @@ f2xx_rtc_write(void *arg, hwaddr addr, uint64_t data, unsigned int size)
     f2xx_rtc *s = arg;
     int offset = addr & 0x3;
     bool    compute_new_target_offset = false;
+    bool    update_wut = false;
 
     //DPRINTF("%s: addr: 0x%llx, data: 0x%llx, size: %d\n", __func__, addr, data, size);
 
@@ -151,11 +159,18 @@ f2xx_rtc_write(void *arg, hwaddr addr, uint64_t data, unsigned int size)
         compute_new_target_offset = true;
         break;
     case R_RTC_CR:
+        if ((data & R_RTC_CR_WUTE) != (s->regs[R_RTC_CR] & R_RTC_CR_WUTE)) {
+            update_wut = true;
+        }
         break;
     case R_RTC_ISR:
         if ((data & 1<<8) == 0 && (s->regs[R_RTC_ISR] & 1<<8) != 0) {
-            DEBUG_ALARM("f2xx rtc isr lowered\n");
+            DPRINTF("f2xx rtc isr lowered\n");
             qemu_irq_lower(s->irq[0]);
+        }
+        if ((data & 1<<10) == 0 && (s->regs[R_RTC_ISR] & 1<<10) != 0) {
+            DPRINTF("f2xx rtc WUT isr lowered\n");
+            qemu_irq_lower(s->wut_irq);
         }
         break;
     case R_RTC_PRER:
@@ -164,6 +179,9 @@ f2xx_rtc_write(void *arg, hwaddr addr, uint64_t data, unsigned int size)
          * would need to account for the time already elapsed, and then update
          * the timer for the remaining period.
          */
+        break;
+    case R_RTC_WUTR:
+        update_wut = true;
         break;
     case R_RTC_ALRMAR:
     case R_RTC_ALRMBR:
@@ -188,10 +206,21 @@ f2xx_rtc_write(void *arg, hwaddr addr, uint64_t data, unsigned int size)
         // Recompute ticks based on the modified contents of the TR and DR registers
         s->ticks = f2xx_rtc_get_current_target_time(s, &target_tm);
         // Update the host to target offset as well
-        s->host_to_target_offset_us = f2xx_rtc_compute_host_to_target_offset(s, f2xx_period(s),
-                                          s->ticks);
+        s->host_to_target_offset_us = f2xx_rtc_compute_host_to_target_offset(s,
+        								f2xx_clock_period_ns(s), s->ticks);
     }
 
+    // Do we need to update the timer for the wake-up-timer?
+    if (update_wut) {
+        if (s->regs[R_RTC_CR] & R_RTC_CR_WUTE) {
+            int64_t elapsed = f2xx_wut_period_ns(s, s->regs[R_RTC_WUTR]);
+            DPRINTF("%s: scheduling WUT to fire in %f ms\n", __func__, (float)elapsed/1000000.0);
+            timer_mod(s->wu_timer, qemu_clock_get_ns(QEMU_CLOCK_HOST) + elapsed);
+        } else {
+            DPRINTF("%s: Cancelling WUT\n", __func__);
+            timer_del(s->wu_timer);
+        }
+    }
 }
 
 
@@ -233,19 +262,18 @@ f2xx_alarm_check(f2xx_rtc *s, int unit)
     uint32_t cr = s->regs[R_RTC_CR];
     uint32_t isr = s->regs[R_RTC_ISR];
 
-#if 0 
     if ((cr & 1<<(8 + unit)) == 0) {
         return; /* Not enabled. */
     }
-#endif
+
     if ((isr & 1<<(8 + unit)) == 0) {
         if (f2xx_alarm_match(s, s->regs[R_RTC_ALRMAR + unit])) {
             isr |= 1<<(8 + unit);
             s->regs[R_RTC_ISR] = isr;
-            //DPRINTF("f2xx rtc alarm activated 0x%x 0x%x\n", isr, cr);
+            DPRINTF("f2xx rtc alarm activated 0x%x 0x%x\n", isr, cr);
         }
     }
-    qemu_set_irq(s->irq[unit], cr & 1<<(12 + unit) && isr & 1<<(8 + unit));
+	qemu_set_irq(s->irq[unit], cr & 1<<(12 + unit) && isr & 1<<(8 + unit));
 }
 
 static void
@@ -372,6 +400,39 @@ f2xx_rtc_write(void *arg, hwaddr addr, uint64_t data, unsigned int size)
 
 }
 
+
+// This timer fires when the wake up time has expired
+static void
+f2xx_wu_timer(void *arg)
+{
+    f2xx_rtc *s = arg;
+
+    DPRINTF("%s: fired\n", __func__);
+
+    // Fire the interrupt?
+    uint32_t cr = s->regs[R_RTC_CR];
+    uint32_t isr = s->regs[R_RTC_ISR];
+
+    // Make sure WUT is enabled
+    if ( (cr & R_RTC_CR_WUTE) == 0 ) {
+        return; /* Not enabled */
+    }
+
+    // If interrupt not already asserted, assert it
+    if ( (isr & R_RTC_ISR_WUT) == 0 ) {
+        isr |= R_RTC_ISR_WUT;
+        s->regs[R_RTC_ISR] = isr;
+        DPRINTF("f2xx wakeup timer ISR activated 0x%x 0x%x\n", isr, cr);
+    }
+
+    qemu_set_irq(s->wut_irq, (cr & R_RTC_CR_WUTIE) && (isr & R_RTC_ISR_WUT));
+
+    // Reschedule again
+    int64_t elapsed = f2xx_wut_period_ns(s, s->regs[R_RTC_WUTR]);
+    timer_mod(s->wu_timer, qemu_clock_get_ns(QEMU_CLOCK_HOST) + elapsed);
+}
+
+
 static const MemoryRegionOps f2xx_rtc_ops = {
     .read = f2xx_rtc_read,
     .write = f2xx_rtc_write,
@@ -399,6 +460,7 @@ f2xx_rtc_init(SysBusDevice *dev)
 
     memory_region_init_io(&s->iomem, OBJECT(s), &f2xx_rtc_ops, s, "rtc", 0xa0);
     sysbus_init_mmio(dev, &s->iomem);
+
     sysbus_init_irq(dev, &s->irq[0]);
     sysbus_init_irq(dev, &s->irq[1]);
     f2xx_rtc_set_from_host(s);
