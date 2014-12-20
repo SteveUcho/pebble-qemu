@@ -28,6 +28,7 @@
 #define R_RTC_TR     (0x00 / 4)
 #define R_RTC_DR     (0x04 / 4)
 #define R_RTC_CR     (0x08 / 4)
+#define R_RTC_CR_ALRAE_BIT 8
 #define R_RTC_CR_WUTE   0x00000400
 #define R_RTC_CR_WUTIE  0x00004000
 
@@ -48,6 +49,7 @@
 #define R_RTC_ALRMAR (0x1c / 4)
 #define R_RTC_ALRMBR (0x20 / 4)
 #define R_RTC_WPR    (0x24 / 4)
+#define R_RTC_SSR    (0x28 / 4)
 #define R_RTC_TSTR   (0x30 / 4)
 #define R_RTC_TSDR   (0x34 / 4)
 #define R_RTC_TAFCR  (0x40 / 4)
@@ -262,11 +264,11 @@ f2xx_alarm_check(f2xx_rtc *s, int unit)
     uint32_t cr = s->regs[R_RTC_CR];
     uint32_t isr = s->regs[R_RTC_ISR];
 
-    if ((cr & 1<<(8 + unit)) == 0) {
+    if ((cr & 1<<(R_RTC_CR_ALRAE_BIT + unit)) == 0) {
         return; /* Not enabled. */
     }
 
-    if ((isr & 1<<(8 + unit)) == 0) {
+    if ((isr & 1<<(R_RTC_CR_ALRAE_BIT + unit)) == 0) {
         if (f2xx_alarm_match(s, s->regs[R_RTC_ALRMAR + unit])) {
             isr |= 1<<(8 + unit);
             s->regs[R_RTC_ISR] = isr;
@@ -277,7 +279,7 @@ f2xx_alarm_check(f2xx_rtc *s, int unit)
 }
 
 static void
-f2xx_timer(void *arg)
+f2xx_update_current_date_and_time(void *arg)
 {
     f2xx_rtc *s = arg;
 
@@ -398,6 +400,15 @@ f2xx_rtc_write(void *arg, hwaddr addr, uint64_t data, unsigned int size)
     }
     s->regs[addr] = data;
 
+}
+
+
+// This timer runs on every tick (usually second)
+static void
+f2xx_timer(void *arg)
+{
+    f2xx_rtc *s = arg;
+    f2xx_update_current_date_and_time(s);
 }
 
 
