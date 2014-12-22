@@ -220,6 +220,7 @@ f2xx_rtc_write(void *arg, hwaddr addr, uint64_t data, unsigned int size)
             timer_mod(s->wu_timer, qemu_clock_get_ns(QEMU_CLOCK_HOST) + elapsed);
         } else {
             DPRINTF("%s: Cancelling WUT\n", __func__);
+            qemu_set_irq(s->wut_irq, 0);
             timer_del(s->wu_timer);
         }
     }
