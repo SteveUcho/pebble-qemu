@@ -1531,7 +1531,7 @@ static void ppc_spapr_init(MachineState *machine)
         machine->usb |= defaults_enabled();
     }
 
-    if ((spapr->has_graphics && defaults_enabled()) || usb_enabled()) {
+    if (machine->usb) {
         pci_create_simple(phb->bus, -1, "pci-ohci");
         if (spapr->has_graphics) {
             usbdevice_create("keyboard");
