@@ -1002,9 +1002,10 @@ bool defaults_enabled(void)
     return has_defaults;
 }
 
-bool usb_enabled(void)
+bool usb_enabled(bool default_usb)
 {
-    return machine_usb(current_machine);
+    return qemu_opt_get_bool(qemu_get_machine_opts(), "usb",
+                             default_usb);
 }
 
 #ifndef _WIN32
