@@ -2730,6 +2730,11 @@ static void armv7m_nvic_instance_init(Object *obj)
     qdev_init_gpio_in_named(dev, nvic_nmi_trigger, "NMI", 1);
 }
 
+static Property armv7m_nvic_properties[] = {
+    DEFINE_PROP_PTR("stm32_pwr", nvic_state, stm32_pwr_prop),
+    DEFINE_PROP_END_OF_LIST(),
+};
+
 static void armv7m_nvic_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -2738,6 +2743,7 @@ static void armv7m_nvic_class_init(ObjectClass *klass, void *data)
     device_class_set_props(dc, props_nvic);
     device_class_set_legacy_reset(dc, armv7m_nvic_reset);
     dc->realize = armv7m_nvic_realize;
+    dc->props = armv7m_nvic_properties;
 }
 
 static const TypeInfo armv7m_nvic_info = {
