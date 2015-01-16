@@ -766,6 +766,9 @@ void armv7m_nvic_set_pending_lazyfp(NVICState *s, int irq, bool secure)
     }
 }
 
+bool g_in_deep_sleep;
+bool g_in_standby;
+
 /* Make pending IRQ active.  */
 void armv7m_nvic_acknowledge_irq(NVICState *s)
 {
