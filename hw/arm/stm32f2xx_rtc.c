@@ -496,6 +496,7 @@ f2xx_rtc_class_init(ObjectClass *klass, void *data)
     sc->init = f2xx_rtc_init;
     //TODO: fix this: dc->no_user = 1;
     dc->props = f2xx_rtc_properties;
+    dc->reset = f2xx_rtc_reset;
 }
 
 static const TypeInfo
