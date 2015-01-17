@@ -107,7 +107,7 @@ f2xx_rtc_write(void *arg, hwaddr addr, uint64_t data, unsigned int size)
     bool    compute_new_target_offset = false;
     bool    update_wut = false;
 
-    //DPRINTF("%s: addr: 0x%llx, data: 0x%llx, size: %d\n", __func__, addr, data, size);
+    DPRINTF("%s: addr: 0x%llx, data: 0x%llx, size: %d\n", __func__, addr, data, size);
 
     addr >>= 2;
     if (addr >= R_RTC_MAX) {
