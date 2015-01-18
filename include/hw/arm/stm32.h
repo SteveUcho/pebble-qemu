@@ -138,6 +138,11 @@ typedef int32_t stm32_periph_t;
 #define STM32_TIM3_IRQ 29
 #define STM32_TIM4_IRQ 30
 
+#define STM32_I2C1_EV_IRQ 31
+#define STM32_I2C1_ER_IRQ 32
+#define STM32_I2C2_EV_IRQ 33
+#define STM32_I2C2_ER_IRQ 34
+
 #define STM32_SPI1_IRQ 35
 #define STM32_SPI2_IRQ 36
 
@@ -168,6 +173,9 @@ typedef int32_t stm32_periph_t;
 #define STM32_DMA2_STREAM7_IRQ 70
 
 #define STM32_UART6_IRQ 71
+
+#define STM32_I2C3_EV_IRQ 72
+#define STM32_I2C3_ER_IRQ 73
 
 #define STM32_SPI4_IRQ 84
 #define STM32_SPI5_IRQ 85
