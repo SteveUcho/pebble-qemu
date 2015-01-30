@@ -1624,6 +1624,7 @@ static void gd_ungrab_keyboard(GtkDisplayState *s)
 
 static void gd_grab_pointer(VirtualConsole *vc, const char *reason)
 {
+    return;
     GdkDisplay *display = gtk_widget_get_display(vc->gfx.drawing_area);
 
     if (vc->s->ptr_owner) {
@@ -1644,6 +1645,7 @@ static void gd_grab_pointer(VirtualConsole *vc, const char *reason)
 
 static void gd_ungrab_pointer(GtkDisplayState *s)
 {
+    return;
     VirtualConsole *vc = s->ptr_owner;
     GdkDisplay *display;
 
