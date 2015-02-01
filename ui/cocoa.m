@@ -1179,7 +1179,9 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 
 - (void) grabMouse
 {
+#ifdef NO_MOUSE
     return;
+#endif
     COCOA_DEBUG("QemuCocoaView: grabMouse\n");
 
     if (qemu_name)
@@ -1193,7 +1195,9 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 
 - (void) ungrabMouse
 {
+#ifdef NO_MOUSE
     return;
+#endif
     COCOA_DEBUG("QemuCocoaView: ungrabMouse\n");
 
     if (qemu_name)
