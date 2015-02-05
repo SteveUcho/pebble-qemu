@@ -114,19 +114,36 @@ void stm32f7xx_init(
             struct stm32f7xx *stm,
             ARMCPU **cpu)
 {
-    MemoryRegion *address_space_mem = get_system_memory();
     DriveInfo *dinfo;
     DeviceState *nvic;
     int i;
 
     Object *stm32_container = container_get(qdev_get_machine(), "/stm32");
 
+    MemoryRegion *sram = g_new(MemoryRegion, 1);
+    MemoryRegion *flash = g_new(MemoryRegion, 1);
+    MemoryRegion *system_memory = get_system_memory();
+
+    flash_size *= 1024;
+    sram_size *= 1024;
+
+    if (kernel_filename) {
+        memory_region_init_ram(flash, NULL, "stm32f7xx.flash", flash_size,
+                           &error_abort);
+        vmstate_register_ram_global(flash);
+        memory_region_set_readonly(flash, true);
+        memory_region_add_subregion(system_memory, 0, flash);
+    }
+
+    if (sram_size) {
+        memory_region_init_ram(sram, NULL, "stm32f7xx.sram", sram_size, &error_abort);
+        vmstate_register_ram_global(sram);
+        memory_region_add_subregion(system_memory, 0x20000000, sram);
+    }
+
     nvic = armv7m_translated_init(
-                stm32_container,          /* parent */
                 address_space_mem,        /* address space memory */
-                flash_size * 1024,        /* flash size in bytes */
-                ram_size * 1024,          /* sram size in bytes */
-                0,                        /* default number of irqs */
+                flash_size,               /* flash size */
                 kernel_filename,          /* kernel filename */
                 kernel_load_translate_fn, /* kernel translate address function */
                 NULL,                     /* translate  function opaque argument */
