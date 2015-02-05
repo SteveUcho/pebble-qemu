@@ -131,6 +131,7 @@ void stm32f4xx_init(
     pic = armv7m_translated_init(
                 system_memory,            /* address space memory */
                 flash_size,               /* flash size */
+                STM32_MAX_IRQ + 1,        /* number of IRQs */
                 kernel_filename,          /* kernel filename */
                 kernel_load_translate_fn, /* kernel translate address function */
                 NULL,                     /* translate  function opaque argument */

@@ -167,7 +167,7 @@ static void armv7m_reset(void *opaque)
    mem_size is in bytes.
    Returns the NVIC array.  */
 
-qemu_irq *armv7m_init(MemoryRegion *system_memory, int mem_size,
+qemu_irq *armv7m_init(MemoryRegion *system_memory, int mem_size, int num_irq,
                       const char *kernel_filename, const char *cpu_model) {
     ARMCPU *cpu;
     return armv7m_translated_init(system_memory, mem_size,
@@ -175,7 +175,7 @@ qemu_irq *armv7m_init(MemoryRegion *system_memory, int mem_size,
 }
 
 qemu_irq *armv7m_translated_init(MemoryRegion *system_memory,
-                                 int mem_size,
+                                 int mem_size, int num_irq,
                                  const char *kernel_filename,
                                  uint64_t (*translate_fn)(void *, uint64_t),
                                  void *translate_opaque,
@@ -185,8 +185,7 @@ qemu_irq *armv7m_translated_init(MemoryRegion *system_memory,
     ARMCPU *cpu;
     CPUARMState *env;
     DeviceState *nvic;
-    /* FIXME: make this local state.  */
-    static qemu_irq pic[STM32_MAX_IRQ + 1];    /* Enough for STM32F4xx */
+    qemu_irq *pic = g_new(qemu_irq, num_irq);
     int image_size;
     uint64_t entry;
     uint64_t lowaddr;
@@ -216,9 +215,7 @@ qemu_irq *armv7m_translated_init(MemoryRegion *system_memory,
     }
 
     nvic = qdev_create(NULL, "armv7m_nvic");
-    /* The NVIC must be configured with a multiple of 32 IRQs */
-    uint32_t num_irqs = ((STM32_MAX_IRQ + 31) / 32) * 32;
-    qdev_prop_set_uint32(nvic, "num-irq", num_irqs);
+    qdev_prop_set_uint32(nvic, "num-irq", num_irq);
     env->nvic = nvic;
     qdev_init_nofail(nvic);
 
@@ -230,8 +227,7 @@ qemu_irq *armv7m_translated_init(MemoryRegion *system_memory,
     qemu_irq cpu_wakeup_in = qdev_get_gpio_in(DEVICE(cpu), ARM_CPU_WKUP);
     qdev_connect_gpio_out_named(DEVICE(nvic), "wakeup_out", 0, cpu_wakeup_in);
 
-
-    for (i = 0; i < STM32_MAX_IRQ; i++) {
+    for (i = 0; i < num_irq; i++) {
         pic[i] = qdev_get_gpio_in(nvic, i);
     }
 

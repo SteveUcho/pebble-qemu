@@ -126,6 +126,7 @@ void stm32f2xx_init(
     pic = armv7m_translated_init(
                 system_memory,
                 flash_size,
+                STM32_MAX_IRQ + 1,
                 kernel_filename,
                 kernel_load_translate_fn,
                 NULL,

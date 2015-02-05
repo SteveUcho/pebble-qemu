@@ -144,6 +144,7 @@ void stm32f7xx_init(
     nvic = armv7m_translated_init(
                 address_space_mem,        /* address space memory */
                 flash_size,               /* flash size */
+                STM32_MAX_IRQ + 1,        /* number of IRQs */
                 kernel_filename,          /* kernel filename */
                 kernel_load_translate_fn, /* kernel translate address function */
                 NULL,                     /* translate  function opaque argument */
