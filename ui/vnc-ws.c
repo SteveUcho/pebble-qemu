@@ -219,11 +219,7 @@ static void vncws_send_handshake_response(VncState *vs, const char* key)
     }
 
     response = g_strdup_printf(WS_HANDSHAKE, accept);
-    // Use the raw write function to avoid wrapping it with WS framing that is not
-    // yet legal.
-    vnc_lock_output(vs);
     vnc_client_write_buf(vs, (const uint8_t *)response, strlen(response));
-    vnc_unlock_output(vs);
 
     g_free(accept);
     g_free(response);
