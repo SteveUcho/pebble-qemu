@@ -109,7 +109,6 @@ cscope.*
 tags
 TAGS
 *~
-/tests/qemu-iotests/common.env
 
 build
 .DS_Store
