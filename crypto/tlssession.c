@@ -171,8 +171,7 @@ qcrypto_tls_session_new(QCryptoTLSCreds *creds,
             goto error;
         }
 
-        if (creds->endpoint == QCRYPTO_TLS_CREDS_ENDPOINT_SERVER &&
-            creds->verifyPeer) {
+        if (creds->endpoint == QCRYPTO_TLS_CREDS_ENDPOINT_SERVER) {
             /* This requests, but does not enforce a client cert.
              * The cert checking code later does enforcement */
             gnutls_certificate_server_set_request(session->handle,
@@ -305,9 +304,9 @@ qcrypto_tls_session_check_certificate(QCryptoTLSSession *session,
 
                 allow = qemu_acl_party_is_allowed(acl, session->peername);
 
+                error_setg(errp, "TLS x509 ACL check for %s is %s",
+                           session->peername, allow ? "allowed" : "denied");
                 if (!allow) {
-                    error_setg(errp, "TLS x509 ACL check for %s is denied",
-                               session->peername);
                     goto error;
                 }
             }
