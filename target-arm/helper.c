@@ -4333,10 +4333,17 @@ static void do_v7m_exception_exit(CPUARMState *env)
     env->regs[3] = v7m_pop(env);
     env->regs[12] = v7m_pop(env);
     env->regs[14] = v7m_pop(env);
-    /* If this is a "simulated" stack frame built by an operating system, the
-     * thumb state bit (bit 0) may be set. We need to make sure it is cleared
-     * when restoring the program counter. */
-    env->regs[15] = v7m_pop(env) & 0xfffffffe;
+    env->regs[15] = v7m_pop(env);
+    if (env->regs[15] & 1) {
+        qemu_log_mask(LOG_GUEST_ERROR,
+                      "M profile return from interrupt with misaligned "
+                      "PC is UNPREDICTABLE\n");
+        /* Actual hardware seems to ignore the lsbit, and there are several
+         * RTOSes out there which incorrectly assume the r15 in the stack
+         * frame should be a Thumb-style "lsbit indicates ARM/Thumb" value.
+         */
+        env->regs[15] &= ~1U;
+    }
     xpsr = v7m_pop(env);
     xpsr_write(env, xpsr, 0xfffffdff);
     /* Undo stack alignment.  */
