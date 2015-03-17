@@ -25,8 +25,6 @@
 #ifdef CONFIG_VNC_TLS
 #include "qemu/sockets.h"
 
-static void vncws_tls_handshake_io(void *opaque);
-
 static int vncws_start_tls_handshake(struct VncState *vs)
 {
     int ret = gnutls_handshake(vs->ws_tls.session);
@@ -54,44 +52,18 @@ static int vncws_start_tls_handshake(struct VncState *vs)
     return 0;
 }
 
-static void vncws_tls_handshake_io(void *opaque)
+void vncws_tls_handshake_io(void *opaque)
 {
     struct VncState *vs = (struct VncState *)opaque;
 
-    if (!vs->tls) {
-        vs->tls = qcrypto_tls_session_new(vs->vd->tlscreds,
-                                          NULL,
-                                          vs->vd->tlsaclname,
-                                          QCRYPTO_TLS_CREDS_ENDPOINT_SERVER,
-                                          &err);
-    }
-    if (!vs->tls) {
-        VNC_DEBUG("Failed to setup TLS %s\n",
-                  error_get_pretty(err));
-        error_free(err);
-        vnc_client_error(vs);
-        return;
-    }
-
-void vncws_tls_handshake_peek(void *opaque)
-{
-    VncState *vs = opaque;
-    long ret;
-
-    if (!vs->ws_tls.session) {
-        char peek[4];
-        ret = qemu_recv(vs->csock, peek, sizeof(peek), MSG_PEEK);
-        if (ret && (strncmp(peek, "\x16", 1) == 0
-                    || strncmp(peek, "\x80", 1) == 0)) {
-            VNC_DEBUG("TLS Websocket connection recognized");
-            vnc_tls_client_setup(vs, 1);
-            vncws_start_tls_handshake(vs);
-        } else {
-            vncws_handshake_read(vs);
+    if (!vs->tls.session) {
+        VNC_DEBUG("TLS Websocket setup\n");
+        if (vnc_tls_client_setup(vs, vs->vd->tls.x509cert != NULL) < 0) {
+            return;
         }
-    } else {
-        qemu_set_fd_handler2(vs->csock, NULL, vncws_handshake_read, NULL, vs);
     }
+    VNC_DEBUG("Handshake IO continue\n");
+    vncws_start_tls_handshake(vs);
 }
 #endif /* CONFIG_VNC_TLS */
 
