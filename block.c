@@ -768,6 +768,19 @@ static void bdrv_assign_node_name(BlockDriverState *bs,
     QTAILQ_INSERT_TAIL(&graph_bdrv_states, bs, node_list);
 }
 
+static QemuOptsList bdrv_runtime_opts = {
+    .name = "bdrv_common",
+    .head = QTAILQ_HEAD_INITIALIZER(bdrv_runtime_opts.head),
+    .desc = {
+        {
+            .name = "node-name",
+            .type = QEMU_OPT_STRING,
+            .help = "Node name of the block device node",
+        },
+        { /* end of list */ }
+    },
+};
+
 /*
  * Common part for opening disk images and files
  *
@@ -779,6 +792,7 @@ static int bdrv_open_common(BlockDriverState *bs, BlockDriverState *file,
     int ret, open_flags;
     const char *filename;
     const char *node_name = NULL;
+    QemuOpts *opts;
     Error *local_err = NULL;
 
     assert(drv != NULL);
@@ -799,13 +813,21 @@ static int bdrv_open_common(BlockDriverState *bs, BlockDriverState *file,
 
     trace_bdrv_open_common(bs, filename ?: "", flags, drv->format_name);
 
-    node_name = qdict_get_try_str(options, "node-name");
+    opts = qemu_opts_create(&bdrv_runtime_opts, NULL, 0, &error_abort);
+    qemu_opts_absorb_qdict(opts, options, &local_err);
+    if (local_err) {
+        error_propagate(errp, local_err);
+        ret = -EINVAL;
+        goto fail_opts;
+    }
+
+    node_name = qemu_opt_get(opts, "node-name");
     bdrv_assign_node_name(bs, node_name, &local_err);
     if (local_err) {
         error_propagate(errp, local_err);
-        return -EINVAL;
+        ret = -EINVAL;
+        goto fail_opts;
     }
-    qdict_del(options, "node-name");
 
     bs->open_flags = flags;
     bs->guest_block_size = 512;
@@ -820,7 +842,8 @@ static int bdrv_open_common(BlockDriverState *bs, BlockDriverState *file,
                         ? "Driver '%s' can only be used for read-only devices"
                         : "Driver '%s' is not whitelisted",
                    drv->format_name);
-        return -ENOTSUP;
+        ret = -ENOTSUP;
+        goto fail_opts;
     }
 
     assert(bs->copy_on_read == 0); /* bdrv_new() and bdrv_close() make it so */
@@ -829,7 +852,8 @@ static int bdrv_open_common(BlockDriverState *bs, BlockDriverState *file,
             bdrv_enable_copy_on_read(bs);
         } else {
             error_setg(errp, "Can't use copy-on-read on read-only device");
-            return -EINVAL;
+            ret = -EINVAL;
+            goto fail_opts;
         }
     }
 
@@ -895,6 +919,8 @@ static int bdrv_open_common(BlockDriverState *bs, BlockDriverState *file,
     assert(bdrv_opt_mem_align(bs) != 0);
     assert(bdrv_min_mem_align(bs) != 0);
     assert((bs->request_alignment != 0) || bs->sg);
+
+    qemu_opts_del(opts);
     return 0;
 
 free_and_fail:
@@ -902,6 +928,8 @@ free_and_fail:
     g_free(bs->opaque);
     bs->opaque = NULL;
     bs->drv = NULL;
+fail_opts:
+    qemu_opts_del(opts);
     return ret;
 }
 
