@@ -80,6 +80,12 @@ static QTAILQ_HEAD(, BlockDriverState) graph_bdrv_states =
 static QLIST_HEAD(, BlockDriver) bdrv_drivers =
     QLIST_HEAD_INITIALIZER(bdrv_drivers);
 
+static int bdrv_open_inherit(BlockDriverState **pbs, const char *filename,
+                             const char *reference, QDict *options, int flags,
+                             BlockDriverState *parent,
+                             const BdrvChildRole *child_role,
+                             BlockDriver *drv, Error **errp);
+
 static void bdrv_dirty_bitmap_truncate(BlockDriverState *bs);
 /* If non-zero, use only whitelisted block drivers */
 static int use_bdrv_whitelist;
@@ -683,8 +689,8 @@ static int bdrv_temp_snapshot_flags(int flags)
 }
 
 /*
- * Returns the flags that bs->file should get, based on the given flags for
- * the parent BDS
+ * Returns the flags that bs->file should get if a protocol driver is expected,
+ * based on the given flags for the parent BDS
  */
 static int bdrv_inherited_flags(int flags)
 {
@@ -701,6 +707,25 @@ static int bdrv_inherited_flags(int flags)
     return flags;
 }
 
+const BdrvChildRole child_file = {
+    .inherit_flags = bdrv_inherited_flags,
+};
+
+/*
+ * Returns the flags that bs->file should get if the use of formats (and not
+ * only protocols) is permitted for it, based on the given flags for the parent
+ * BDS
+ */
+static int bdrv_inherited_fmt_flags(int parent_flags)
+{
+    int flags = child_file.inherit_flags(parent_flags);
+    return flags & ~BDRV_O_PROTOCOL;
+}
+
+const BdrvChildRole child_format = {
+    .inherit_flags = bdrv_inherited_fmt_flags,
+};
+
 /*
  * Returns the flags that bs->backing_hd should get, based on the given flags
  * for the parent BDS
@@ -715,6 +740,10 @@ static int bdrv_backing_flags(int flags)
 
     return flags;
 }
+
+static const BdrvChildRole child_backing = {
+    .inherit_flags = bdrv_backing_flags,
+};
 
 static int bdrv_open_flags(BlockDriverState *bs, int flags)
 {
@@ -829,7 +858,6 @@ static int bdrv_open_common(BlockDriverState *bs, BlockDriverState *file,
         goto fail_opts;
     }
 
-    bs->open_flags = flags;
     bs->guest_block_size = 512;
     bs->request_alignment = 512;
     bs->zero_beyond_eof = true;
@@ -1159,9 +1187,10 @@ int bdrv_open_backing_file(BlockDriverState *bs, QDict *options, Error **errp)
     }
 
     assert(bs->backing_hd == NULL);
-    ret = bdrv_open(&backing_hd,
-                    *backing_filename ? backing_filename : NULL, NULL, options,
-                    bdrv_backing_flags(bs->open_flags), NULL, &local_err);
+    ret = bdrv_open_inherit(&backing_hd,
+                            *backing_filename ? backing_filename : NULL,
+                            NULL, options, 0, bs, &child_backing,
+                            NULL, &local_err);
     if (ret < 0) {
         bdrv_unref(backing_hd);
         backing_hd = NULL;
@@ -1195,7 +1224,8 @@ free_exit:
  * To conform with the behavior of bdrv_open(), *pbs has to be NULL.
  */
 int bdrv_open_image(BlockDriverState **pbs, const char *filename,
-                    QDict *options, const char *bdref_key, int flags,
+                    QDict *options, const char *bdref_key,
+                    BlockDriverState* parent, const BdrvChildRole *child_role,
                     bool allow_none, Error **errp)
 {
     QDict *image_options;
@@ -1223,7 +1253,8 @@ int bdrv_open_image(BlockDriverState **pbs, const char *filename,
         goto done;
     }
 
-    ret = bdrv_open(pbs, filename, reference, image_options, flags, NULL, errp);
+    ret = bdrv_open_inherit(pbs, filename, reference, image_options, 0,
+                            parent, child_role, NULL, errp);
 
 done:
     qdict_del(options, bdref_key);
@@ -1310,9 +1341,11 @@ out:
  * should be opened. If specified, neither options nor a filename may be given,
  * nor can an existing BDS be reused (that is, *pbs has to be NULL).
  */
-int bdrv_open(BlockDriverState **pbs, const char *filename,
-              const char *reference, QDict *options, int flags,
-              BlockDriver *drv, Error **errp)
+static int bdrv_open_inherit(BlockDriverState **pbs, const char *filename,
+                             const char *reference, QDict *options, int flags,
+                             BlockDriverState *parent,
+                             const BdrvChildRole *child_role,
+                             BlockDriver *drv, Error **errp)
 {
     int ret;
     BlockDriverState *file = NULL, *bs;
@@ -1321,6 +1354,8 @@ int bdrv_open(BlockDriverState **pbs, const char *filename,
     int snapshot_flags = 0;
 
     assert(pbs);
+    assert(!child_role || !flags);
+    assert(!child_role == !parent);
 
     if (reference) {
         bool options_non_empty = options ? qdict_size(options) : false;
@@ -1358,6 +1393,10 @@ int bdrv_open(BlockDriverState **pbs, const char *filename,
         options = qdict_new();
     }
 
+    if (child_role) {
+        flags = child_role->inherit_flags(parent->open_flags);
+    }
+
     ret = bdrv_fill_options(&options, &filename, &flags, drv, &local_err);
     if (local_err) {
         goto fail;
@@ -1378,6 +1417,7 @@ int bdrv_open(BlockDriverState **pbs, const char *filename,
 
     assert(drvname || !(flags & BDRV_O_PROTOCOL));
 
+    bs->open_flags = flags;
     bs->options = options;
     options = qdict_clone_shallow(options);
 
@@ -1392,9 +1432,9 @@ int bdrv_open(BlockDriverState **pbs, const char *filename,
         }
 
         assert(file == NULL);
+        bs->open_flags = flags;
         ret = bdrv_open_image(&file, filename, options, "file",
-                              bdrv_inherited_flags(flags),
-                              true, &local_err);
+                              bs, &child_file, true, &local_err);
         if (ret < 0) {
             goto fail;
         }
@@ -1515,6 +1555,14 @@ close_and_fail:
         error_propagate(errp, local_err);
     }
     return ret;
+}
+
+int bdrv_open(BlockDriverState **pbs, const char *filename,
+              const char *reference, QDict *options, int flags,
+              BlockDriver *drv, Error **errp)
+{
+    return bdrv_open_inherit(pbs, filename, reference, options, flags, NULL,
+                             NULL, drv, errp);
 }
 
 typedef struct BlockReopenQueueEntry {
