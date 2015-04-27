@@ -97,11 +97,6 @@
 #define ARM_CPU_VFIQ 3
 #define ARM_CPU_WKUP 4
 
-typedef void ARMWriteCPFunc(void *opaque, int cp_info,
-                            int srcreg, int operand, uint32_t value);
-typedef uint32_t ARMReadCPFunc(void *opaque, int cp_info,
-                               int dstreg, int operand);
-
 struct arm_boot_info;
 
 #define NB_MMU_MODES 7
