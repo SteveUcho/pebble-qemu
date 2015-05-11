@@ -239,7 +239,7 @@ qemu_irq *armv7m_translated_init(MemoryRegion *system_memory,
 
     if (kernel_filename) {
         image_size = load_elf(kernel_filename, translate_fn, translate_opaque, &entry, &lowaddr,
-                              NULL, big_endian, ELF_MACHINE, 1);
+                              NULL, big_endian, EM_ARM, 1);
         if (image_size < 0) {
             image_size = load_image_targphys(kernel_filename, 0, mem_size);
             lowaddr = 0;
