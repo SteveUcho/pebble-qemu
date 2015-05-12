@@ -185,7 +185,7 @@ int armv7m_nvic_acknowledge_irq(void *opaque)
         s->in_standby = false;
     }
 
-    irq = gic_acknowledge_irq(&s->gic, 0);
+    irq = gic_acknowledge_irq(&s->gic, 0, MEMTXATTRS_UNSPECIFIED);
     if (irq == 1023)
         //hw_error("Interrupt but no vector\n");
         return 1023;
