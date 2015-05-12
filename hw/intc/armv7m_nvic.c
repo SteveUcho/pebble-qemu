@@ -583,7 +583,7 @@ static void armv7m_nvic_reset(DeviceState *dev)
     memset(s->gic.priority2, 0, sizeof(s->gic.priority2));
 
     /* The NVIC as a whole is always enabled. */
-    s->gic.enabled = true;
+    s->gic.ctlr = 1;
     systick_reset(s);
 
     s->scr_reg = 0;
