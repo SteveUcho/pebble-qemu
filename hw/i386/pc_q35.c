@@ -446,6 +446,10 @@ static QEMUMachine pc_q35_machine_v2_3 = {
     PC_Q35_2_3_MACHINE_OPTIONS,
     .name = "pc-q35-2.3",
     .init = pc_q35_init_2_3,
+    .compat_props = (GlobalProperty[]) {
+        PC_COMPAT_2_3
+        { /* end of list */ }
+    },
 };
 
 #define PC_Q35_2_2_MACHINE_OPTIONS PC_Q35_2_3_MACHINE_OPTIONS
@@ -454,6 +458,10 @@ static QEMUMachine pc_q35_machine_v2_2 = {
     PC_Q35_2_2_MACHINE_OPTIONS,
     .name = "pc-q35-2.2",
     .init = pc_q35_init_2_2,
+    .compat_props = (GlobalProperty[]) {
+        PC_COMPAT_2_2
+        { /* end of list */ }
+    },
 };
 
 #define PC_Q35_2_1_MACHINE_OPTIONS                      \
@@ -466,7 +474,7 @@ static QEMUMachine pc_q35_machine_v2_1 = {
     .init = pc_q35_init_2_1,
     .init = pc_q35_init_2_1,
     .compat_props = (GlobalProperty[]) {
-        HW_COMPAT_2_1
+        PC_COMPAT_2_1
         { /* end of list */ }
     },
 };
