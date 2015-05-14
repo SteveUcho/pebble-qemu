@@ -582,7 +582,7 @@ static QEMUMachine pc_i440fx_machine_v2_0 = {
     .name = "pc-i440fx-2.0",
     .init = pc_init_pci_2_0,
     .compat_props = (GlobalProperty[]) {
-        PC_COMPAT_2_0,
+        PC_COMPAT_2_0
         { /* end of list */ }
     },
 };
@@ -594,7 +594,7 @@ static QEMUMachine pc_i440fx_machine_v1_7 = {
     .name = "pc-i440fx-1.7",
     .init = pc_init_pci_1_7,
     .compat_props = (GlobalProperty[]) {
-        PC_COMPAT_1_7,
+        PC_COMPAT_1_7
         { /* end of list */ }
     },
 };
@@ -606,7 +606,7 @@ static QEMUMachine pc_i440fx_machine_v1_6 = {
     .name = "pc-i440fx-1.6",
     .init = pc_init_pci_1_6,
     .compat_props = (GlobalProperty[]) {
-        PC_COMPAT_1_6,
+        PC_COMPAT_1_6
         { /* end of list */ }
     },
 };
@@ -616,7 +616,7 @@ static QEMUMachine pc_i440fx_machine_v1_5 = {
     .name = "pc-i440fx-1.5",
     .init = pc_init_pci_1_5,
     .compat_props = (GlobalProperty[]) {
-        PC_COMPAT_1_5,
+        PC_COMPAT_1_5
         { /* end of list */ }
     },
 };
@@ -630,13 +630,13 @@ static QEMUMachine pc_i440fx_machine_v1_4 = {
     .name = "pc-i440fx-1.4",
     .init = pc_init_pci_1_4,
     .compat_props = (GlobalProperty[]) {
-        PC_COMPAT_1_4,
+        PC_COMPAT_1_4
         { /* end of list */ }
     },
 };
 
 #define PC_COMPAT_1_3 \
-        PC_COMPAT_1_4, \
+        PC_COMPAT_1_4 \
         {\
             .driver   = "usb-tablet",\
             .property = "usb_version",\
@@ -653,20 +653,20 @@ static QEMUMachine pc_i440fx_machine_v1_4 = {
             .driver   = "e1000",\
             .property = "autonegotiation",\
             .value    = "off",\
-        }
+        },
 
 static QEMUMachine pc_machine_v1_3 = {
     PC_I440FX_1_4_MACHINE_OPTIONS,
     .name = "pc-1.3",
     .init = pc_init_pci_1_3,
     .compat_props = (GlobalProperty[]) {
-        PC_COMPAT_1_3,
+        PC_COMPAT_1_3
         { /* end of list */ }
     },
 };
 
 #define PC_COMPAT_1_2 \
-        PC_COMPAT_1_3,\
+        PC_COMPAT_1_3 \
         {\
             .driver   = "nec-usb-xhci",\
             .property = "msi",\
@@ -691,7 +691,7 @@ static QEMUMachine pc_machine_v1_3 = {
             .driver   = "VGA",\
             .property = "mmio",\
             .value    = "off",\
-        }
+        },
 
 #define PC_I440FX_1_2_MACHINE_OPTIONS \
     PC_I440FX_1_4_MACHINE_OPTIONS, \
@@ -701,13 +701,13 @@ static QEMUMachine pc_machine_v1_2 = {
     PC_I440FX_1_2_MACHINE_OPTIONS,
     .name = "pc-1.2",
     .compat_props = (GlobalProperty[]) {
-        PC_COMPAT_1_2,
+        PC_COMPAT_1_2
         { /* end of list */ }
     },
 };
 
 #define PC_COMPAT_1_1 \
-        PC_COMPAT_1_2,\
+        PC_COMPAT_1_2 \
         {\
             .driver   = "virtio-scsi-pci",\
             .property = "hotplug",\
@@ -736,19 +736,19 @@ static QEMUMachine pc_machine_v1_2 = {
             .driver   = "virtio-blk-pci",\
             .property = "config-wce",\
             .value    = "off",\
-        }
+        },
 
 static QEMUMachine pc_machine_v1_1 = {
     PC_I440FX_1_2_MACHINE_OPTIONS,
     .name = "pc-1.1",
     .compat_props = (GlobalProperty[]) {
-        PC_COMPAT_1_1,
+        PC_COMPAT_1_1
         { /* end of list */ }
     },
 };
 
 #define PC_COMPAT_1_0 \
-        PC_COMPAT_1_1,\
+        PC_COMPAT_1_1 \
         {\
             .driver   = TYPE_ISA_FDC,\
             .property = "check_media_rate",\
@@ -765,13 +765,13 @@ static QEMUMachine pc_machine_v1_1 = {
             .driver   = TYPE_USB_DEVICE,\
             .property = "full-path",\
             .value    = "no",\
-        }
+        },
 
 static QEMUMachine pc_machine_v1_0 = {
     PC_I440FX_1_2_MACHINE_OPTIONS,
     .name = "pc-1.0",
     .compat_props = (GlobalProperty[]) {
-        PC_COMPAT_1_0,
+        PC_COMPAT_1_0
         { /* end of list */ }
     },
     .hw_version = "1.0",
@@ -784,14 +784,14 @@ static QEMUMachine pc_machine_v0_15 = {
     PC_I440FX_1_2_MACHINE_OPTIONS,
     .name = "pc-0.15",
     .compat_props = (GlobalProperty[]) {
-        PC_COMPAT_0_15,
+        PC_COMPAT_0_15
         { /* end of list */ }
     },
     .hw_version = "0.15",
 };
 
 #define PC_COMPAT_0_14 \
-        PC_COMPAT_0_15,\
+        PC_COMPAT_0_15 \
         {\
             .driver   = "virtio-blk-pci",\
             .property = "event_idx",\
@@ -808,13 +808,13 @@ static QEMUMachine pc_machine_v0_15 = {
             .driver   = "virtio-balloon-pci",\
             .property = "event_idx",\
             .value    = "off",\
-        }
+        },
 
 static QEMUMachine pc_machine_v0_14 = {
     PC_I440FX_1_2_MACHINE_OPTIONS,
     .name = "pc-0.14",
     .compat_props = (GlobalProperty[]) {
-        PC_COMPAT_0_14, 
+        PC_COMPAT_0_14
         {
             .driver   = "qxl",
             .property = "revision",
@@ -830,7 +830,7 @@ static QEMUMachine pc_machine_v0_14 = {
 };
 
 #define PC_COMPAT_0_13 \
-        PC_COMPAT_0_14,\
+        PC_COMPAT_0_14 \
         {\
             .driver   = TYPE_PCI_DEVICE,\
             .property = "command_serr_enable",\
@@ -839,7 +839,7 @@ static QEMUMachine pc_machine_v0_14 = {
             .driver   = "AC97",\
             .property = "use_broken_id",\
             .value    = stringify(1),\
-        }
+        },
 
 #define PC_I440FX_0_13_MACHINE_OPTIONS \
     PC_I440FX_1_2_MACHINE_OPTIONS, \
@@ -849,7 +849,7 @@ static QEMUMachine pc_machine_v0_13 = {
     PC_I440FX_0_13_MACHINE_OPTIONS,
     .name = "pc-0.13",
     .compat_props = (GlobalProperty[]) {
-        PC_COMPAT_0_13,
+        PC_COMPAT_0_13
         {
             .driver   = "virtio-9p-pci",
             .property = "vectors",
@@ -869,7 +869,7 @@ static QEMUMachine pc_machine_v0_13 = {
 };
 
 #define PC_COMPAT_0_12 \
-        PC_COMPAT_0_13,\
+        PC_COMPAT_0_13 \
         {\
             .driver   = "virtio-serial-pci",\
             .property = "max_ports",\
@@ -890,13 +890,13 @@ static QEMUMachine pc_machine_v0_13 = {
             .driver   = "usb-kbd",\
             .property = "serial",\
             .value    = "1",\
-        }
+        },
 
 static QEMUMachine pc_machine_v0_12 = {
     PC_I440FX_0_13_MACHINE_OPTIONS,
     .name = "pc-0.12",
     .compat_props = (GlobalProperty[]) {
-        PC_COMPAT_0_12,
+        PC_COMPAT_0_12
         {
             .driver   = "VGA",
             .property = "rombar",
@@ -912,7 +912,7 @@ static QEMUMachine pc_machine_v0_12 = {
 };
 
 #define PC_COMPAT_0_11 \
-        PC_COMPAT_0_12,\
+        PC_COMPAT_0_12 \
         {\
             .driver   = "virtio-blk-pci",\
             .property = "vectors",\
@@ -921,13 +921,13 @@ static QEMUMachine pc_machine_v0_12 = {
             .driver   = TYPE_PCI_DEVICE,\
             .property = "rombar",\
             .value    = stringify(0),\
-        }
+        },
 
 static QEMUMachine pc_machine_v0_11 = {
     PC_I440FX_0_13_MACHINE_OPTIONS,
     .name = "pc-0.11",
     .compat_props = (GlobalProperty[]) {
-        PC_COMPAT_0_11,
+        PC_COMPAT_0_11
         {
             .driver   = "ide-drive",
             .property = "ver",
@@ -946,7 +946,7 @@ static QEMUMachine pc_machine_v0_10 = {
     PC_I440FX_0_13_MACHINE_OPTIONS,
     .name = "pc-0.10",
     .compat_props = (GlobalProperty[]) {
-        PC_COMPAT_0_11,
+        PC_COMPAT_0_11
         {
             .driver   = "virtio-blk-pci",
             .property = "class",
