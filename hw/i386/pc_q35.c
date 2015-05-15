@@ -431,16 +431,18 @@ static void pc_q35_init_1_4(MachineState *machine)
 #define PC_Q35_2_4_MACHINE_OPTIONS                      \
     PC_Q35_MACHINE_OPTIONS,                             \
     .default_machine_opts = "firmware=bios-256k.bin",   \
-    .default_display = "std"
+    .default_display = "std",                           \
+    .alias = "q35"
 
 static QEMUMachine pc_q35_machine_v2_4 = {
     PC_Q35_2_4_MACHINE_OPTIONS,
     .name = "pc-q35-2.4",
-    .alias = "q35",
     .init = pc_q35_init,
 };
 
-#define PC_Q35_2_3_MACHINE_OPTIONS PC_Q35_2_4_MACHINE_OPTIONS
+#define PC_Q35_2_3_MACHINE_OPTIONS \
+    PC_Q35_2_4_MACHINE_OPTIONS, \
+    .alias = NULL
 
 static QEMUMachine pc_q35_machine_v2_3 = {
     PC_Q35_2_3_MACHINE_OPTIONS,
@@ -452,7 +454,8 @@ static QEMUMachine pc_q35_machine_v2_3 = {
     },
 };
 
-#define PC_Q35_2_2_MACHINE_OPTIONS PC_Q35_2_3_MACHINE_OPTIONS
+#define PC_Q35_2_2_MACHINE_OPTIONS \
+    PC_Q35_2_3_MACHINE_OPTIONS
 
 static QEMUMachine pc_q35_machine_v2_2 = {
     PC_Q35_2_2_MACHINE_OPTIONS,
@@ -464,9 +467,9 @@ static QEMUMachine pc_q35_machine_v2_2 = {
     },
 };
 
-#define PC_Q35_2_1_MACHINE_OPTIONS                      \
-    PC_Q35_MACHINE_OPTIONS,                             \
-    .default_machine_opts = "firmware=bios-256k.bin"
+#define PC_Q35_2_1_MACHINE_OPTIONS \
+    PC_Q35_2_2_MACHINE_OPTIONS, \
+    .default_display = NULL
 
 static QEMUMachine pc_q35_machine_v2_1 = {
     PC_Q35_2_1_MACHINE_OPTIONS,
@@ -479,7 +482,8 @@ static QEMUMachine pc_q35_machine_v2_1 = {
     },
 };
 
-#define PC_Q35_2_0_MACHINE_OPTIONS PC_Q35_2_1_MACHINE_OPTIONS
+#define PC_Q35_2_0_MACHINE_OPTIONS \
+    PC_Q35_2_1_MACHINE_OPTIONS
 
 static QEMUMachine pc_q35_machine_v2_0 = {
     PC_Q35_2_0_MACHINE_OPTIONS,
@@ -491,7 +495,9 @@ static QEMUMachine pc_q35_machine_v2_0 = {
     },
 };
 
-#define PC_Q35_1_7_MACHINE_OPTIONS PC_Q35_MACHINE_OPTIONS
+#define PC_Q35_1_7_MACHINE_OPTIONS \
+    PC_Q35_2_0_MACHINE_OPTIONS, \
+    .default_machine_opts = NULL
 
 static QEMUMachine pc_q35_machine_v1_7 = {
     PC_Q35_1_7_MACHINE_OPTIONS,
@@ -503,7 +509,8 @@ static QEMUMachine pc_q35_machine_v1_7 = {
     },
 };
 
-#define PC_Q35_1_6_MACHINE_OPTIONS PC_Q35_MACHINE_OPTIONS
+#define PC_Q35_1_6_MACHINE_OPTIONS \
+    PC_Q35_MACHINE_OPTIONS
 
 static QEMUMachine pc_q35_machine_v1_6 = {
     PC_Q35_1_6_MACHINE_OPTIONS,
@@ -515,8 +522,11 @@ static QEMUMachine pc_q35_machine_v1_6 = {
     },
 };
 
+#define PC_Q35_1_5_MACHINE_OPTIONS \
+    PC_Q35_1_6_MACHINE_OPTIONS
+
 static QEMUMachine pc_q35_machine_v1_5 = {
-    PC_Q35_1_6_MACHINE_OPTIONS,
+    PC_Q35_1_5_MACHINE_OPTIONS,
     .name = "pc-q35-1.5",
     .init = pc_q35_init_1_5,
     .compat_props = (GlobalProperty[]) {
@@ -526,7 +536,7 @@ static QEMUMachine pc_q35_machine_v1_5 = {
 };
 
 #define PC_Q35_1_4_MACHINE_OPTIONS \
-    PC_Q35_1_6_MACHINE_OPTIONS, \
+    PC_Q35_1_5_MACHINE_OPTIONS, \
     .hot_add_cpu = NULL
 
 static QEMUMachine pc_q35_machine_v1_4 = {
