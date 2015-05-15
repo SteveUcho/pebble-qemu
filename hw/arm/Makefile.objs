@@ -10,6 +10,7 @@ obj-$(CONFIG_DIGIC) += digic.o
 obj-y += omap1.o omap2.o strongarm.o
 obj-$(CONFIG_ALLWINNER_A10) += allwinner-a10.o cubieboard.o
 obj-$(CONFIG_STM32F205_SOC) += stm32f205_soc.o
+obj-$(CONFIG_XLNX_ZYNQMP) += xlnx-zynqmp.o
 
 obj-y += stm32.o stm32_rcc.o stm32_clktree.o stm32_p103.o
 obj-y += stm32f1xx.o stm32f2xx.o stm32f4xx.o stm32f7xx.o stm32_flash.o
