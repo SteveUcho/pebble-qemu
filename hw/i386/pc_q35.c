@@ -421,7 +421,7 @@ static void pc_q35_init_1_4(MachineState *machine)
     pc_q35_init(machine);
 }
 
-static void pc_q35_machine_options(QEMUMachine *m)
+static void pc_q35_machine_options(MachineClass *m)
 {
     pc_default_machine_options(m);
     m->family = "pc_q35";
@@ -430,7 +430,7 @@ static void pc_q35_machine_options(QEMUMachine *m)
     m->units_per_default_bus = 1;
 }
 
-static void pc_q35_2_4_machine_options(QEMUMachine *m)
+static void pc_q35_2_4_machine_options(MachineClass *m)
 {
     pc_q35_machine_options(m);
     m->default_machine_opts = "firmware=bios-256k.bin";
@@ -442,7 +442,7 @@ DEFINE_PC_MACHINE(v2_4, "pc-q35-2.4", pc_q35_init,
                   pc_q35_2_4_machine_options);
 
 
-static void pc_q35_2_3_machine_options(QEMUMachine *m)
+static void pc_q35_2_3_machine_options(MachineClass *m)
 {
     pc_q35_2_4_machine_options(m);
     m->alias = NULL;
@@ -453,7 +453,7 @@ DEFINE_PC_MACHINE(v2_3, "pc-q35-2.3", pc_q35_init_2_3,
                   pc_q35_2_3_machine_options);
 
 
-static void pc_q35_2_2_machine_options(QEMUMachine *m)
+static void pc_q35_2_2_machine_options(MachineClass *m)
 {
     pc_q35_2_3_machine_options(m);
     SET_MACHINE_COMPAT(m, PC_COMPAT_2_2);
@@ -463,7 +463,7 @@ DEFINE_PC_MACHINE(v2_2, "pc-q35-2.2", pc_q35_init_2_2,
                   pc_q35_2_2_machine_options);
 
 
-static void pc_q35_2_1_machine_options(QEMUMachine *m)
+static void pc_q35_2_1_machine_options(MachineClass *m)
 {
     pc_q35_2_2_machine_options(m);
     m->default_display = NULL;
@@ -474,7 +474,7 @@ DEFINE_PC_MACHINE(v2_1, "pc-q35-2.1", pc_q35_init_2_1,
                   pc_q35_2_1_machine_options);
 
 
-static void pc_q35_2_0_machine_options(QEMUMachine *m)
+static void pc_q35_2_0_machine_options(MachineClass *m)
 {
     pc_q35_2_1_machine_options(m);
     SET_MACHINE_COMPAT(m, PC_COMPAT_2_0);
@@ -484,7 +484,7 @@ DEFINE_PC_MACHINE(v2_0, "pc-q35-2.0", pc_q35_init_2_0,
                   pc_q35_2_0_machine_options);
 
 
-static void pc_q35_1_7_machine_options(QEMUMachine *m)
+static void pc_q35_1_7_machine_options(MachineClass *m)
 {
     pc_q35_2_0_machine_options(m);
     m->default_machine_opts = NULL;
@@ -495,7 +495,7 @@ DEFINE_PC_MACHINE(v1_7, "pc-q35-1.7", pc_q35_init_1_7,
                   pc_q35_1_7_machine_options);
 
 
-static void pc_q35_1_6_machine_options(QEMUMachine *m)
+static void pc_q35_1_6_machine_options(MachineClass *m)
 {
     pc_q35_machine_options(m);
     SET_MACHINE_COMPAT(m, PC_COMPAT_1_6);
@@ -505,7 +505,7 @@ DEFINE_PC_MACHINE(v1_6, "pc-q35-1.6", pc_q35_init_1_6,
                   pc_q35_1_6_machine_options);
 
 
-static void pc_q35_1_5_machine_options(QEMUMachine *m)
+static void pc_q35_1_5_machine_options(MachineClass *m)
 {
     pc_q35_1_6_machine_options(m);
     SET_MACHINE_COMPAT(m, PC_COMPAT_1_5);
@@ -515,7 +515,7 @@ DEFINE_PC_MACHINE(v1_5, "pc-q35-1.5", pc_q35_init_1_5,
                   pc_q35_1_5_machine_options);
 
 
-static void pc_q35_1_4_machine_options(QEMUMachine *m)
+static void pc_q35_1_4_machine_options(MachineClass *m)
 {
     pc_q35_1_5_machine_options(m);
     m->hot_add_cpu = NULL;
