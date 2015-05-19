@@ -64,6 +64,7 @@ static int last_buttons;
 
 int gArgc;
 char **gArgv;
+bool stretch_video;
 
 // keymap conversion
 int keymap[] =
@@ -418,6 +419,18 @@ QemuCocoaView *cocoaView;
     if (isFullscreen) {
         cdx = [[NSScreen mainScreen] frame].size.width / (float)screen.width;
         cdy = [[NSScreen mainScreen] frame].size.height / (float)screen.height;
+
+        /* stretches video, but keeps same aspect ratio */
+        if (stretch_video == true) {
+            /* use smallest stretch value - prevents clipping on sides */
+            if (MIN(cdx, cdy) == cdx) {
+                cdy = cdx;
+            } else {
+                cdx = cdy;
+            }
+        } else {  /* No stretching */
+            cdx = cdy = 1;
+        }
         cw = screen.width * cdx;
         ch = screen.height * cdy;
         cx = ([[NSScreen mainScreen] frame].size.width - cw) / 2.0;
@@ -502,6 +515,7 @@ QemuCocoaView *cocoaView;
 #endif
     } else { // switch from desktop to fullscreen
         isFullscreen = TRUE;
+        [normalWindow orderOut: nil]; /* Hide the window */
         [self grabMouse];
         [self setContentDimensions];
 // test if host supports "enterFullScreenMode:withOptions" at compile time
@@ -518,8 +532,11 @@ QemuCocoaView *cocoaView;
                 styleMask:NSBorderlessWindowMask
                 backing:NSBackingStoreBuffered
                 defer:NO];
+            [fullScreenWindow setAcceptsMouseMovedEvents: YES];
             [fullScreenWindow setHasShadow:NO];
-            [fullScreenWindow setContentView:self];
+            [fullScreenWindow setBackgroundColor: [NSColor blackColor]];
+            [self setFrame:NSMakeRect(cx, cy, cw, ch)];
+            [[fullScreenWindow contentView] addSubview: self];
             [fullScreenWindow makeKeyAndOrderFront:self];
 #if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
         }
@@ -561,7 +578,7 @@ QemuCocoaView *cocoaView;
             }
 
             // release Mouse grab when pressing ctrl+alt
-            if (!isFullscreen && ([event modifierFlags] & NSControlKeyMask) && ([event modifierFlags] & NSAlternateKeyMask)) {
+            if (([event modifierFlags] & NSControlKeyMask) && ([event modifierFlags] & NSAlternateKeyMask)) {
                 [self ungrabMouse];
             }
             break;
@@ -804,9 +821,11 @@ QemuCocoaView *cocoaView;
 }
 - (void)startEmulationWithArgc:(int)argc argv:(char**)argv;
 - (void)openPanelDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
+- (void)doToggleFullScreen:(id)sender;
 - (void)toggleFullScreen:(id)sender;
 - (void)showQEMUDoc:(id)sender;
 - (void)showQEMUTec:(id)sender;
+- (void)zoomToFit:(id) sender;
 @end
 
 @implementation QemuCocoaAppController
@@ -838,7 +857,7 @@ QemuCocoaView *cocoaView;
         [normalWindow useOptimizedDrawing:YES];
         [normalWindow makeKeyAndOrderFront:self];
         [normalWindow center];
-
+        stretch_video = false;
     }
     return self;
 }
@@ -927,6 +946,16 @@ QemuCocoaView *cocoaView;
         [self startEmulationWithArgc:3 argv:(char**)argv];
     }
 }
+
+/* We abstract the method called by the Enter Fullscreen menu item
+ * because Mac OS 10.7 and higher disables it. This is because of the
+ * menu item's old selector's name toggleFullScreen:
+ */
+- (void) doToggleFullScreen:(id)sender
+{
+    [self toggleFullScreen:(id)sender];
+}
+
 - (void)toggleFullScreen:(id)sender
 {
     COCOA_DEBUG("QemuCocoaAppController: toggleFullScreen\n");
@@ -960,139 +989,6 @@ QemuCocoaView *cocoaView;
         [sender setState: NSOffState];
     }
 }
-
-/* Displays the console on the screen */
-- (void)displayConsole:(id)sender
-{
-    console_select([sender tag]);
-}
-
-/* Pause the guest */
-- (void)pauseQEMU:(id)sender
-{
-    qmp_stop(NULL);
-    [sender setEnabled: NO];
-    [[[sender menu] itemWithTitle: @"Resume"] setEnabled: YES];
-    [self displayPause];
-}
-
-/* Resume running the guest operating system */
-- (void)resumeQEMU:(id) sender
-{
-    qmp_cont(NULL);
-    [sender setEnabled: NO];
-    [[[sender menu] itemWithTitle: @"Pause"] setEnabled: YES];
-    [self removePause];
-}
-
-/* Displays the word pause on the screen */
-- (void)displayPause
-{
-    /* Coordinates have to be calculated each time because the window can change its size */
-    int xCoord, yCoord, width, height;
-    xCoord = ([normalWindow frame].size.width - [pauseLabel frame].size.width)/2;
-    yCoord = [normalWindow frame].size.height - [pauseLabel frame].size.height - ([pauseLabel frame].size.height * .5);
-    width = [pauseLabel frame].size.width;
-    height = [pauseLabel frame].size.height;
-    [pauseLabel setFrame: NSMakeRect(xCoord, yCoord, width, height)];
-    [cocoaView addSubview: pauseLabel];
-}
-
-/* Removes the word pause from the screen */
-- (void)removePause
-{
-    [pauseLabel removeFromSuperview];
-}
-
-/* Restarts QEMU */
-- (void)restartQEMU:(id)sender
-{
-    qmp_system_reset(NULL);
-}
-
-/* Powers down QEMU */
-- (void)powerDownQEMU:(id)sender
-{
-    qmp_system_powerdown(NULL);
-}
-
-/* Ejects the media.
- * Uses sender's tag to figure out the device to eject.
- */
-- (void)ejectDeviceMedia:(id)sender
-{
-    NSString * drive;
-    drive = [sender representedObject];
-    if(drive == nil) {
-        NSBeep();
-        QEMU_Alert(@"Failed to find drive to eject!");
-        return;
-    }
-
-    Error *err = NULL;
-    qmp_eject([drive cStringUsingEncoding: NSASCIIStringEncoding], false, false, &err);
-    handleAnyDeviceErrors(err);
-}
-
-/* Displays a dialog box asking the user to select an image file to load.
- * Uses sender's represented object value to figure out which drive to use.
- */
-- (void)changeDeviceMedia:(id)sender
-{
-    /* Find the drive name */
-    NSString * drive;
-    drive = [sender representedObject];
-    if(drive == nil) {
-        NSBeep();
-        QEMU_Alert(@"Could not find drive!");
-        return;
-    }
-
-    /* Display the file open dialog */
-    NSOpenPanel * openPanel;
-    openPanel = [NSOpenPanel openPanel];
-    [openPanel setCanChooseFiles: YES];
-    [openPanel setAllowsMultipleSelection: NO];
-    [openPanel setAllowedFileTypes: supportedImageFileTypes];
-    if([openPanel runModal] == NSFileHandlingPanelOKButton) {
-        NSString * file = [[[openPanel URLs] objectAtIndex: 0] path];
-        if(file == nil) {
-            NSBeep();
-            QEMU_Alert(@"Failed to convert URL to file path!");
-            return;
-        }
-
-        Error *err = NULL;
-        qmp_blockdev_change_medium([drive cStringUsingEncoding:
-                                          NSASCIIStringEncoding],
-                                   [file cStringUsingEncoding:
-                                         NSASCIIStringEncoding],
-                                   true, "raw",
-                                   false, 0,
-                                   &err);
-        handleAnyDeviceErrors(err);
-    }
-}
-
-/* Verifies if the user really wants to quit */
-- (BOOL)verifyQuit
-{
-#ifdef SKIP_QUIT_PROMPT
-    return YES;
-#else
-    NSAlert *alert = [NSAlert new];
-    [alert autorelease];
-    [alert setMessageText: @"Are you sure you want to quit QEMU?"];
-    [alert addButtonWithTitle: @"Cancel"];
-    [alert addButtonWithTitle: @"Quit"];
-    if([alert runModal] == NSAlertSecondButtonReturn) {
-        return YES;
-    } else {
-        return NO;
-    }
-#endif
-}
-
 @end
 
 
@@ -1155,7 +1051,8 @@ int main (int argc, const char * argv[]) {
 
     // View menu
     menu = [[NSMenu alloc] initWithTitle:@"View"];
-    [menu addItem: [[[NSMenuItem alloc] initWithTitle:@"Enter Fullscreen" action:@selector(toggleFullScreen:) keyEquivalent:@"f"] autorelease]]; // Fullscreen
+    [menu addItem: [[[NSMenuItem alloc] initWithTitle:@"Enter Fullscreen" action:@selector(doToggleFullScreen:) keyEquivalent:@"f"] autorelease]]; // Fullscreen
+    [menu addItem: [[[NSMenuItem alloc] initWithTitle:@"Zoom To Fit" action:@selector(zoomToFit:) keyEquivalent:@""] autorelease]];
     menuItem = [[[NSMenuItem alloc] initWithTitle:@"View" action:nil keyEquivalent:@""] autorelease];
     [menuItem setSubmenu:menu];
     [[NSApp mainMenu] addItem:menuItem];
