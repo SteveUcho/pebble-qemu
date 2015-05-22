@@ -877,13 +877,7 @@ void write_serial_port(int serial_port_num, const char *fmt, ...)
 
 void qtest_memset(QTestState *s, uint64_t addr, uint8_t pattern, size_t size)
 {
-    size_t i;
-
-    qtest_sendf(s, "write 0x%" PRIx64 " 0x%zx 0x", addr, size);
-    for (i = 0; i < size; i++) {
-        qtest_sendf(s, "%02x", pattern);
-    }
-    qtest_sendf(s, "\n");
+    qtest_sendf(s, "memset 0x%" PRIx64 " 0x%zx 0x%02x\n", addr, size, pattern);
     qtest_rsp(s, 0);
 }
 
