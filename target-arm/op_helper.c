@@ -252,9 +252,13 @@ void HELPER(wfi)(CPUARMState *env)
 {
     CPUState *cs = CPU(arm_env_get_cpu(env));
 
-    /* Tell the NVIC we are executing a WFI instruction so that it can determine if we should
-     * go into deep sleep mode */
-    armv7m_nvic_cpu_executed_wfi(env->nvic);
+    if (cpu_has_work(cs)) {
+        /* Don't bother to go into our "low power state" if
+         * we would just wake up immediately.
+         */
+        return;
+    }
+
     cs->exception_index = EXCP_HLT;
     cs->halted = 1;
     cpu_loop_exit(cs);
