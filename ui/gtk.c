@@ -1923,11 +1923,18 @@ static void gd_set_keycode_type(GtkDisplayState *s)
 #endif
 }
 
+static gboolean gtkinit;
+
 void gtk_display_init(DisplayState *ds, bool full_screen, bool grab_on_hover)
 {
     GtkDisplayState *s = g_malloc0(sizeof(*s));
     char *filename;
     GdkDisplay *window_display;
+
+    if (!gtkinit) {
+        fprintf(stderr, "gtk initialization failed\n");
+        exit(1);
+    }
 
     s->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 #if GTK_CHECK_VERSION(3, 2, 0)
@@ -2009,7 +2016,11 @@ void gtk_display_init(DisplayState *ds, bool full_screen, bool grab_on_hover)
 
 void early_gtk_display_init(int opengl)
 {
-    gtk_init(NULL, NULL);
+    gtkinit = gtk_init_check(NULL, NULL);
+    if (!gtkinit) {
+        /* don't exit yet, that'll break -help */
+        return;
+    }
 
     switch (opengl) {
     case -1: /* default */
