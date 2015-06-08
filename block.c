@@ -3246,6 +3246,7 @@ static void bdrv_dirty_bitmap_truncate(BlockDriverState *bs)
             continue;
         }
         hbitmap_truncate(bitmap->bitmap, size);
+        bitmap->size = size;
     }
 }
 
