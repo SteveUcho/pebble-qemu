@@ -286,8 +286,8 @@ static void pc_init1(MachineState *machine)
         smi_irq = qemu_allocate_irq(pc_acpi_smi_interrupt, first_cpu, 0);
         /* TODO: Populate SPD eeprom data.  */
         smbus = piix4_pm_init(pci_bus, piix3_devfn + 3, 0xb100,
-                              gsi[9], *smi_irq,
-                              kvm_enabled(), &piix4_pm);
+                              gsi[9], smi_irq,
+                              !kvm_enabled(), &piix4_pm);
         smbus_eeprom_init(smbus, 8, NULL, 0);
 
         object_property_add_link(OBJECT(machine), PC_MACHINE_ACPI_DEVICE_PROP,
