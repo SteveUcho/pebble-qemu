@@ -814,11 +814,12 @@ static void cortex_m3_initfn(Object *obj)
 static void cortex_m4_initfn(Object *obj)
 {
     ARMCPU *cpu = ARM_CPU(obj);
+
     set_feature(&cpu->env, ARM_FEATURE_V7);
     set_feature(&cpu->env, ARM_FEATURE_M);
-    cpu->midr = 0x410fc241;
+    set_feature(&cpu->env, ARM_FEATURE_THUMB_DSP);
+    cpu->midr = 0x410fc240; /* r0p0 */
 }
-
 
 static void arm_v7m_class_init(ObjectClass *oc, void *data)
 {
