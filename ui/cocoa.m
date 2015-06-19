@@ -812,6 +812,8 @@ QemuCocoaView *cocoaView;
 - (void)resumeQEMU:(id)sender;
 - (void)displayPause;
 - (void)removePause;
+- (void)restartQEMU:(id)sender;
+- (void)powerDownQEMU:(id)sender;
 @end
 
 @implementation QemuCocoaAppController
@@ -1039,6 +1041,18 @@ QemuCocoaView *cocoaView;
     [pauseLabel removeFromSuperview];
 }
 
+/* Restarts QEMU */
+- (void)restartQEMU:(id)sender
+{
+    qmp_system_reset(NULL);
+}
+
+/* Powers down QEMU */
+- (void)powerDownQEMU:(id)sender
+{
+    qmp_system_powerdown(NULL);
+}
+
 @end
 
 
@@ -1105,6 +1119,9 @@ int main (int argc, const char * argv[]) {
     menuItem = [[[NSMenuItem alloc] initWithTitle: @"Resume" action: @selector(resumeQEMU:) keyEquivalent: @""] autorelease];
     [menu addItem: menuItem];
     [menuItem setEnabled: NO];
+    [menu addItem: [NSMenuItem separatorItem]];
+    [menu addItem: [[[NSMenuItem alloc] initWithTitle: @"Reset" action: @selector(restartQEMU:) keyEquivalent: @""] autorelease]];
+    [menu addItem: [[[NSMenuItem alloc] initWithTitle: @"Power Down" action: @selector(powerDownQEMU:) keyEquivalent: @""] autorelease]];
     menuItem = [[[NSMenuItem alloc] initWithTitle: @"Machine" action:nil keyEquivalent:@""] autorelease];
     [menuItem setSubmenu:menu];
     [[NSApp mainMenu] addItem:menuItem];
