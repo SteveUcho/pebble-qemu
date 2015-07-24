@@ -119,6 +119,14 @@ static int qemu_signal_init(void)
 #endif
 
 static AioContext *qemu_aio_context;
+static QEMUBH *qemu_notify_bh;
+
+static void notify_event_cb(void *opaque)
+{
+    /* No need to do anything; this bottom half is only used to
+     * kick the kernel out of ppoll/poll/WaitForMultipleObjects.
+     */
+}
 
 AioContext *qemu_get_aio_context(void)
 {
@@ -130,7 +138,7 @@ void qemu_notify_event(void)
     if (!qemu_aio_context) {
         return;
     }
-    aio_notify(qemu_aio_context);
+    qemu_bh_schedule(qemu_notify_bh);
 }
 
 static GArray *gpollfds;
@@ -149,6 +157,7 @@ int qemu_init_main_loop(Error **errp)
     }
 
     qemu_aio_context = aio_context_new(&local_error);
+    qemu_notify_bh = qemu_bh_new(notify_event_cb, NULL);
     if (!qemu_aio_context) {
         error_propagate(errp, local_error);
         return -EMFILE;
