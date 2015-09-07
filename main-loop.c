@@ -166,6 +166,9 @@ int qemu_init_main_loop(Error **errp)
     src = aio_get_g_source(qemu_aio_context);
     g_source_attach(src, NULL);
     g_source_unref(src);
+    src = iohandler_get_g_source();
+    g_source_attach(src, NULL);
+    g_source_unref(src);
     return 0;
 }
 
@@ -492,7 +495,6 @@ int main_loop_wait(int nonblocking)
 #ifdef CONFIG_SLIRP
     slirp_pollfds_fill(gpollfds, &timeout);
 #endif
-    qemu_iohandler_fill(gpollfds);
 
     if (timeout == UINT32_MAX) {
         timeout_ns = -1;
@@ -505,7 +507,6 @@ int main_loop_wait(int nonblocking)
                                           &main_loop_tlg));
 
     ret = os_host_main_loop_wait(timeout_ns);
-    qemu_iohandler_poll(gpollfds, ret);
 #ifdef CONFIG_SLIRP
     slirp_pollfds_poll(gpollfds, (ret < 0));
 #endif
