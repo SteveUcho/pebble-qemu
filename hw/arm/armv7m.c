@@ -253,7 +253,7 @@ qemu_irq *armv7m_translated_init(MemoryRegion *system_memory,
     /* Hack to map an additional page of ram at the top of the address
        space.  This stops qemu complaining about executing code outside RAM
        when returning from an exception.  */
-    memory_region_init_ram(hack, NULL, "armv7m.hack", 0x1000, &error_abort);
+    memory_region_init_ram(hack, NULL, "armv7m.hack", 0x1000, &error_fatal);
     vmstate_register_ram_global(hack);
     memory_region_add_subregion(system_memory, 0xfffff000, hack);
 
