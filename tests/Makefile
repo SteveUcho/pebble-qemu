@@ -445,8 +445,16 @@ tests/test-mul64$(EXESUF): tests/test-mul64.o $(test-util-obj-y)
 tests/test-bitops$(EXESUF): tests/test-bitops.o $(test-util-obj-y)
 tests/test-crypto-hash$(EXESUF): tests/test-crypto-hash.o $(test-crypto-obj-y)
 tests/test-crypto-cipher$(EXESUF): tests/test-crypto-cipher.o $(test-crypto-obj-y)
+
+tests/crypto-tls-x509-helpers.o-cflags := $(TASN1_CFLAGS)
+tests/crypto-tls-x509-helpers.o-libs := $(TASN1_LIBS)
+tests/pkix_asn1_tab.o-cflags := $(TASN1_CFLAGS)
+
+tests/test-crypto-tlscredsx509.o-cflags := $(TASN1_CFLAGS)
 tests/test-crypto-tlscredsx509$(EXESUF): tests/test-crypto-tlscredsx509.o \
 	tests/crypto-tls-x509-helpers.o tests/pkix_asn1_tab.o $(test-crypto-obj-y)
+
+tests/test-crypto-tlssession.o-cflags := $(TASN1_CFLAGS)
 tests/test-crypto-tlssession$(EXESUF): tests/test-crypto-tlssession.o \
 	tests/crypto-tls-x509-helpers.o tests/pkix_asn1_tab.o $(test-crypto-obj-y)
 
@@ -521,8 +529,6 @@ tests/test-stm32$(EXESUF): tests/test-stm32.o
 ifeq ($(CONFIG_POSIX),y)
 LIBS += -lutil
 endif
-LIBS += $(TEST_LIBS)
-CFLAGS += $(TEST_CFLAGS)
 
 # QTest rules
 
