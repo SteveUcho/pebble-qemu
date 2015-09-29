@@ -4231,9 +4231,12 @@ static CharDriverState *qmp_chardev_open_socket(const char *id,
     return chr;
 }
 
-static CharDriverState *qmp_chardev_open_udp(ChardevUdp *udp,
+static CharDriverState *qmp_chardev_open_udp(const char *id,
+                                             ChardevBackend *backend,
+                                             ChardevReturn *ret,
                                              Error **errp)
 {
+    ChardevUdp *udp = backend->udp;
     int fd;
 
     fd = socket_dgram(udp->remote, udp->local, errp);
@@ -4290,7 +4293,7 @@ ChardevReturn *qmp_chardev_add(const char *id, ChardevBackend *backend,
             abort();
             break;
         case CHARDEV_BACKEND_KIND_UDP:
-            chr = qmp_chardev_open_udp(backend->udp, &local_err);
+            abort();
             break;
 #ifdef HAVE_CHARDEV_PTY
         case CHARDEV_BACKEND_KIND_PTY:
@@ -4405,7 +4408,7 @@ static void register_types(void)
     register_char_driver("socket", CHARDEV_BACKEND_KIND_SOCKET,
                          qemu_chr_parse_socket, qmp_chardev_open_socket);
     register_char_driver("udp", CHARDEV_BACKEND_KIND_UDP, qemu_chr_parse_udp,
-                         NULL);
+                         qmp_chardev_open_udp);
     register_char_driver("ringbuf", CHARDEV_BACKEND_KIND_RINGBUF,
                          qemu_chr_parse_ringbuf, NULL);
     register_char_driver("file", CHARDEV_BACKEND_KIND_FILE,
