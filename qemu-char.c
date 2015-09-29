@@ -4018,8 +4018,12 @@ QemuOptsList qemu_chardev_opts = {
 
 #ifdef _WIN32
 
-static CharDriverState *qmp_chardev_open_file(ChardevFile *file, Error **errp)
+static CharDriverState *qmp_chardev_open_file(const char *id,
+                                              ChardevBackend *backend,
+                                              ChardevReturn *ret,
+                                              Error **errp)
 {
+    ChardevFile *file = backend->file;
     HANDLE out;
 
     if (file->has_in) {
@@ -4063,8 +4067,12 @@ static int qmp_chardev_open_file_source(char *src, int flags,
     return fd;
 }
 
-static CharDriverState *qmp_chardev_open_file(ChardevFile *file, Error **errp)
+static CharDriverState *qmp_chardev_open_file(const char *id,
+                                              ChardevBackend *backend,
+                                              ChardevReturn *ret,
+                                              Error **errp)
 {
+    ChardevFile *file = backend->file;
     int flags, in = -1, out;
 
     flags = O_WRONLY | O_TRUNC | O_CREAT | O_BINARY;
@@ -4250,7 +4258,7 @@ ChardevReturn *qmp_chardev_add(const char *id, ChardevBackend *backend,
     if (chr == NULL) {
         switch (backend->kind) {
         case CHARDEV_BACKEND_KIND_FILE:
-            chr = qmp_chardev_open_file(backend->file, &local_err);
+            abort();
             break;
 #ifdef HAVE_CHARDEV_SERIAL
         case CHARDEV_BACKEND_KIND_SERIAL:
@@ -4388,7 +4396,7 @@ static void register_types(void)
     register_char_driver("ringbuf", CHARDEV_BACKEND_KIND_RINGBUF,
                          qemu_chr_parse_ringbuf, NULL);
     register_char_driver("file", CHARDEV_BACKEND_KIND_FILE,
-                         qemu_chr_parse_file_out, NULL);
+                         qemu_chr_parse_file_out, qmp_chardev_open_file);
     register_char_driver("stdio", CHARDEV_BACKEND_KIND_STDIO,
                          qemu_chr_parse_stdio, NULL);
     register_char_driver("serial", CHARDEV_BACKEND_KIND_SERIAL,
