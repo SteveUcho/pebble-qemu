@@ -49,12 +49,19 @@ typedef struct SocketInfo
 
 struct QTestState
 {
-    gpio_id last_intercept_gpio_id;
     bool irq_level[MAX_GPIO_INTERCEPTS][MAX_IRQ];
     GString *rx;
     pid_t qemu_pid;  /* our child QEMU process */
-    struct sigaction sigact_old; /* restored on exit */
-    SocketInfo qtest_socket, qmp_socket;
+
+    // beckus - stm32 specific stuff
+    ///////////////////////////////////////////////
+    gpio_id last_intercept_gpio_id;
+
+    // replaces the fd member in upstream
+    SocketInfo qtest_socket;
+    // replaces the qmp_fd member in upstream
+    SocketInfo qmp_socket;
+
     int num_serial_ports;
     SocketInfo *serial_port_sockets;
 };
