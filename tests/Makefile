@@ -326,7 +326,6 @@ qapi-schema += returns-array-bad.json
 qapi-schema += returns-dict.json
 qapi-schema += returns-unknown.json
 qapi-schema += returns-whitelist.json
-qapi-schema += struct-base-clash-base.json
 qapi-schema += struct-base-clash-deep.json
 qapi-schema += struct-base-clash.json
 qapi-schema += struct-data-invalid.json
