@@ -6254,11 +6254,19 @@ static hwaddr S1_ptw_translate(CPUARMState *env, ARMMMUIdx mmu_idx,
  * was being done for a CPU load/store or an address translation instruction
  * (but not if it was for a debug access).
  */
-static uint32_t arm_ldl_ptw(CPUState *cs, hwaddr addr, bool is_secure)
+static uint32_t arm_ldl_ptw(CPUState *cs, hwaddr addr, bool is_secure,
+                            ARMMMUIdx mmu_idx, uint32_t *fsr,
+                            ARMMMUFaultInfo *fi)
 {
+    ARMCPU *cpu = ARM_CPU(cs);
+    CPUARMState *env = &cpu->env;
     MemTxAttrs attrs = {};
 
     attrs.secure = is_secure;
+    addr = S1_ptw_translate(env, mmu_idx, addr, attrs, fsr, fi);
+    if (fi->s1ptw) {
+        return 0;
+    }
     return address_space_ldl(cs->as, addr, attrs, NULL);
 }
 
@@ -6302,7 +6310,8 @@ static bool get_phys_addr_v5(CPUARMState *env, uint32_t address,
         code = 5;
         goto do_fault;
     }
-    desc = arm_ldl_ptw(cs, table, regime_is_secure(env, mmu_idx));
+    desc = arm_ldl_ptw(cs, table, regime_is_secure(env, mmu_idx),
+                       mmu_idx, fsr, fi);
     type = (desc & 3);
     domain = (desc >> 5) & 0x0f;
     if (regime_el(env, mmu_idx) == 1) {
@@ -6338,7 +6347,8 @@ static bool get_phys_addr_v5(CPUARMState *env, uint32_t address,
             /* Fine pagetable.  */
             table = (desc & 0xfffff000) | ((address >> 8) & 0xffc);
         }
-        desc = arm_ldl_ptw(cs, table, regime_is_secure(env, mmu_idx));
+        desc = arm_ldl_ptw(cs, table, regime_is_secure(env, mmu_idx),
+                           mmu_idx, fsr, fi);
         switch (desc & 3) {
         case 0: /* Page translation fault.  */
             code = 7;
@@ -6419,7 +6429,8 @@ static bool get_phys_addr_v6(CPUARMState *env, uint32_t address,
         code = 5;
         goto do_fault;
     }
-    desc = arm_ldl_ptw(cs, table, regime_is_secure(env, mmu_idx));
+    desc = arm_ldl_ptw(cs, table, regime_is_secure(env, mmu_idx),
+                       mmu_idx, fsr, fi);
     type = (desc & 3);
     if (type == 0 || (type == 3 && !arm_feature(env, ARM_FEATURE_PXN))) {
         /* Section translation fault, or attempt to use the encoding
@@ -6470,7 +6481,8 @@ static bool get_phys_addr_v6(CPUARMState *env, uint32_t address,
         ns = extract32(desc, 3, 1);
         /* Lookup l2 entry.  */
         table = (desc & 0xfffffc00) | ((address >> 10) & 0x3fc);
-        desc = arm_ldl_ptw(cs, table, regime_is_secure(env, mmu_idx));
+        desc = arm_ldl_ptw(cs, table, regime_is_secure(env, mmu_idx),
+                           mmu_idx, fsr, fi);
         ap = ((desc >> 4) & 3) | ((desc >> 7) & 4);
         switch (desc & 3) {
         case 0: /* Page translation fault.  */
