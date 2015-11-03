@@ -167,14 +167,14 @@ static void armv7m_reset(void *opaque)
    mem_size is in bytes.
    Returns the NVIC array.  */
 
-qemu_irq *armv7m_init(MemoryRegion *system_memory, int mem_size, int num_irq,
+DeviceState *armv7m_init(MemoryRegion *system_memory, int mem_size, int num_irq,
                       const char *kernel_filename, const char *cpu_model) {
     ARMCPU *cpu;
     return armv7m_translated_init(system_memory, mem_size,
             kernel_filename, NULL, NULL, cpu_model, &cpu);
 }
 
-qemu_irq *armv7m_translated_init(MemoryRegion *system_memory,
+DeviceState *armv7m_translated_init(MemoryRegion *system_memory,
                                  int mem_size, int num_irq,
                                  const char *kernel_filename,
                                  uint64_t (*translate_fn)(void *, uint64_t),
@@ -185,11 +185,9 @@ qemu_irq *armv7m_translated_init(MemoryRegion *system_memory,
     ARMCPU *cpu;
     CPUARMState *env;
     DeviceState *nvic;
-    qemu_irq *pic = g_new(qemu_irq, num_irq);
     int image_size;
     uint64_t entry;
     uint64_t lowaddr;
-    int i;
     int big_endian;
     MemoryRegion *hack = g_new(MemoryRegion, 1);
 
@@ -227,9 +225,6 @@ qemu_irq *armv7m_translated_init(MemoryRegion *system_memory,
     qemu_irq cpu_wakeup_in = qdev_get_gpio_in(DEVICE(cpu), ARM_CPU_WKUP);
     qdev_connect_gpio_out_named(DEVICE(nvic), "wakeup_out", 0, cpu_wakeup_in);
 
-    for (i = 0; i < num_irq; i++) {
-        pic[i] = qdev_get_gpio_in(nvic, i);
-    }
 
 #ifdef TARGET_WORDS_BIGENDIAN
     big_endian = 1;
@@ -258,7 +253,7 @@ qemu_irq *armv7m_translated_init(MemoryRegion *system_memory,
     memory_region_add_subregion(system_memory, 0xfffff000, hack);
 
     qemu_register_reset(armv7m_reset, cpu);
-    return pic;
+    return nvic;
 }
 
 static Property bitband_properties[] = {

@@ -102,7 +102,7 @@ void stm32f4xx_init(
             ARMCPU **cpu)
 {
     DriveInfo *dinfo;
-    qemu_irq *pic;
+    DeviceState *nvic;
     int i;
 
     Object *stm32_container = container_get(qdev_get_machine(), "/stm32");
@@ -128,7 +128,7 @@ void stm32f4xx_init(
         memory_region_add_subregion(system_memory, 0x20000000, sram);
     }
 
-    pic = armv7m_translated_init(
+    nvic = armv7m_translated_init(
                 system_memory,            /* address space memory */
                 flash_size,               /* flash size */
                 STM32_MAX_IRQ + 1,        /* number of IRQs */
@@ -170,7 +170,7 @@ void stm32f4xx_init(
     stm32_init_periph(rcc_dev,
         STM32_RCC_PERIPH,        /* periph index, not used */
         0x40023800,           /* base address */
-        pic[STM32_RCC_IRQ]);  /* irq */
+        nvic[STM32_RCC_IRQ]);  /* irq */
 
     /* Setup GPIOs */
     DeviceState **gpio_dev = (DeviceState **)g_malloc0(sizeof(DeviceState *)
@@ -198,20 +198,20 @@ void stm32f4xx_init(
     SysBusDevice *exti_busdev = SYS_BUS_DEVICE(exti_dev);
     
     /* IRQs from EXTI to NVIC */
-    sysbus_connect_irq(exti_busdev, 0, pic[STM32_EXTI0_IRQ]);
-    sysbus_connect_irq(exti_busdev, 1, pic[STM32_EXTI1_IRQ]);
-    sysbus_connect_irq(exti_busdev, 2, pic[STM32_EXTI2_IRQ]);
-    sysbus_connect_irq(exti_busdev, 3, pic[STM32_EXTI3_IRQ]);
-    sysbus_connect_irq(exti_busdev, 4, pic[STM32_EXTI4_IRQ]);
-    sysbus_connect_irq(exti_busdev, 5, pic[STM32_EXTI9_5_IRQ]);
-    sysbus_connect_irq(exti_busdev, 6, pic[STM32_EXTI15_10_IRQ]);
-    sysbus_connect_irq(exti_busdev, 7, pic[STM32_PVD_IRQ]);
-    sysbus_connect_irq(exti_busdev, 8, pic[STM32_RTCAlarm_IRQ]);
-    sysbus_connect_irq(exti_busdev, 9, pic[STM32_OTG_FS_WKUP_IRQ]);
-    sysbus_connect_irq(exti_busdev, 10, pic[STM32_ETH_WKUP_IRQ]);
-    sysbus_connect_irq(exti_busdev, 11, pic[STM32_OTG_FS_WKUP_IRQ]);
-    sysbus_connect_irq(exti_busdev, 12, pic[STM32_TAMP_STAMP_IRQ]);
-    sysbus_connect_irq(exti_busdev, 13, pic[STM32_RTC_WKUP_IRQ]);
+    sysbus_connect_irq(exti_busdev, 0, nvic[STM32_EXTI0_IRQ]);
+    sysbus_connect_irq(exti_busdev, 1, nvic[STM32_EXTI1_IRQ]);
+    sysbus_connect_irq(exti_busdev, 2, nvic[STM32_EXTI2_IRQ]);
+    sysbus_connect_irq(exti_busdev, 3, nvic[STM32_EXTI3_IRQ]);
+    sysbus_connect_irq(exti_busdev, 4, nvic[STM32_EXTI4_IRQ]);
+    sysbus_connect_irq(exti_busdev, 5, nvic[STM32_EXTI9_5_IRQ]);
+    sysbus_connect_irq(exti_busdev, 6, nvic[STM32_EXTI15_10_IRQ]);
+    sysbus_connect_irq(exti_busdev, 7, nvic[STM32_PVD_IRQ]);
+    sysbus_connect_irq(exti_busdev, 8, nvic[STM32_RTCAlarm_IRQ]);
+    sysbus_connect_irq(exti_busdev, 9, nvic[STM32_OTG_FS_WKUP_IRQ]);
+    sysbus_connect_irq(exti_busdev, 10, nvic[STM32_ETH_WKUP_IRQ]);
+    sysbus_connect_irq(exti_busdev, 11, nvic[STM32_OTG_FS_WKUP_IRQ]);
+    sysbus_connect_irq(exti_busdev, 12, nvic[STM32_TAMP_STAMP_IRQ]);
+    sysbus_connect_irq(exti_busdev, 13, nvic[STM32_RTC_WKUP_IRQ]);
 
 
     /* System configuration controller */
@@ -249,18 +249,18 @@ void stm32f4xx_init(
         //                   (void *)stm32_afio_uart_check_tx_pin_callback);
         qemu_irq irq = NULL;
         if (uart_desc[i].irq_idx != 0) {
-            irq = pic[uart_desc[i].irq_idx];
+            irq = nvic[uart_desc[i].irq_idx];
         }
         stm32_init_periph(uart_dev, periph, uart_desc[i].addr, irq);
         stm32_uart[i] = (Stm32Uart *)uart_dev;
     }
     // TODO: Should we use these instead?
-//    stm32_uart[STM32_UART1_INDEX] = stm32_create_uart_dev(STM32_UART1, rcc_dev, gpio_dev, afio_dev, 0x40011000, pic[STM32_UART1_IRQ]);
-//    stm32_uart[STM32_UART2_INDEX] = stm32_create_uart_dev(STM32_UART2, rcc_dev, gpio_dev, afio_dev, 0x40004400, pic[STM32_UART2_IRQ]);
-//    stm32_uart[STM32_UART3_INDEX] = stm32_create_uart_dev(STM32_UART3, rcc_dev, gpio_dev, afio_dev, 0x40004800, pic[STM32_UART3_IRQ]);
-//    stm32_uart[STM32_UART4_INDEX] = stm32_create_uart_dev(STM32_UART4, rcc_dev, gpio_dev, afio_dev, 0x40004C00, pic[STM32_UART4_IRQ]);
-//    stm32_uart[STM32_UART5_INDEX] = stm32_create_uart_dev(STM32_UART5, rcc_dev, gpio_dev, afio_dev, 0x40005000, pic[STM32_UART5_IRQ]);
-//    stm32_uart[STM32_UART6_INDEX] = stm32_create_uart_dev(STM32_UART6, rcc_dev, gpio_dev, afio_dev, 0x40011400, pic[STM32_UART6_IRQ]);
+//    stm32_uart[STM32_UART1_INDEX] = stm32_create_uart_dev(STM32_UART1, rcc_dev, gpio_dev, afio_dev, 0x40011000, nvic[STM32_UART1_IRQ]);
+//    stm32_uart[STM32_UART2_INDEX] = stm32_create_uart_dev(STM32_UART2, rcc_dev, gpio_dev, afio_dev, 0x40004400, nvic[STM32_UART2_IRQ]);
+//    stm32_uart[STM32_UART3_INDEX] = stm32_create_uart_dev(STM32_UART3, rcc_dev, gpio_dev, afio_dev, 0x40004800, nvic[STM32_UART3_IRQ]);
+//    stm32_uart[STM32_UART4_INDEX] = stm32_create_uart_dev(STM32_UART4, rcc_dev, gpio_dev, afio_dev, 0x40004C00, nvic[STM32_UART4_IRQ]);
+//    stm32_uart[STM32_UART5_INDEX] = stm32_create_uart_dev(STM32_UART5, rcc_dev, gpio_dev, afio_dev, 0x40005000, nvic[STM32_UART5_IRQ]);
+//    stm32_uart[STM32_UART6_INDEX] = stm32_create_uart_dev(STM32_UART6, rcc_dev, gpio_dev, afio_dev, 0x40011400, nvic[STM32_UART6_IRQ]);
 
 
     /* SPI */
@@ -282,7 +282,7 @@ void stm32f4xx_init(
         stm->spi_dev[i]->id = stm32f4xx_periph_name_arr[periph];
         qdev_prop_set_int32(stm->spi_dev[i], "periph", periph);
         stm32_init_periph(stm->spi_dev[i], periph, spi_desc[i].addr,
-          pic[spi_desc[i].irq_idx]);
+          nvic[spi_desc[i].irq_idx]);
     }
 
     /* QSPI */
@@ -344,7 +344,7 @@ void stm32f4xx_init(
 
         DeviceState *timer = qdev_create(NULL, "f2xx_tim");
         timer->id = stm32f4xx_periph_name_arr[periph];
-        stm32_init_periph(timer, periph, timer_desc[i].addr, pic[timer_desc[i].irq_idx]);
+        stm32_init_periph(timer, periph, timer_desc[i].addr, nvic[timer_desc[i].irq_idx]);
         stm32_timer[timer_desc[i].timer_num - 1] = (Stm32Timer *)timer;
     }
 
@@ -364,20 +364,20 @@ void stm32f4xx_init(
     DeviceState *i2c1 = qdev_create(NULL, "f2xx_i2c");
     i2c1->id = stm32f4xx_periph_name_arr[STM32_I2C1];
     qdev_prop_set_int32(i2c1, "periph", STM32_I2C1);
-    stm32_init_periph(i2c1, STM32_I2C1, 0x40005400, pic[STM32_I2C1_EV_IRQ]);
-    sysbus_connect_irq(SYS_BUS_DEVICE(i2c1), 1, pic[STM32_I2C1_ER_IRQ]);
+    stm32_init_periph(i2c1, STM32_I2C1, 0x40005400, nvic[STM32_I2C1_EV_IRQ]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(i2c1), 1, nvic[STM32_I2C1_ER_IRQ]);
 
     DeviceState *i2c2 = qdev_create(NULL, "f2xx_i2c");
     i2c2->id = stm32f4xx_periph_name_arr[STM32_I2C2];
     qdev_prop_set_int32(i2c2, "periph", STM32_I2C2);
-    stm32_init_periph(i2c2, STM32_I2C2, 0x40005800, pic[STM32_I2C2_EV_IRQ]);
-    sysbus_connect_irq(SYS_BUS_DEVICE(i2c2), 1, pic[STM32_I2C2_ER_IRQ]);
+    stm32_init_periph(i2c2, STM32_I2C2, 0x40005800, nvic[STM32_I2C2_EV_IRQ]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(i2c2), 1, nvic[STM32_I2C2_ER_IRQ]);
 
     DeviceState *i2c3 = qdev_create(NULL, "f2xx_i2c");
     i2c3->id = stm32f4xx_periph_name_arr[STM32_I2C3];
     qdev_prop_set_int32(i2c3, "periph", STM32_I2C3);
-    stm32_init_periph(i2c3, STM32_I2C2, 0x40005C00, pic[STM32_I2C3_EV_IRQ]);
-    sysbus_connect_irq(SYS_BUS_DEVICE(i2c3), 1, pic[STM32_I2C3_ER_IRQ]);
+    stm32_init_periph(i2c3, STM32_I2C2, 0x40005C00, nvic[STM32_I2C3_EV_IRQ]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(i2c3), 1, nvic[STM32_I2C3_ER_IRQ]);
 
     dummy_dev("Reserved",  0x40006000, 0x400);
     dummy_dev("BxCAN1",    0x40006400, 0x400);
@@ -403,24 +403,24 @@ void stm32f4xx_init(
     
     DeviceState *dma1 = qdev_create(NULL, "f2xx_dma");
     stm32_init_periph(dma1, STM32_DMA1, 0x40026000, NULL);
-    sysbus_connect_irq(SYS_BUS_DEVICE(dma1), 0, pic[STM32_DMA1_STREAM0_IRQ]);
-    sysbus_connect_irq(SYS_BUS_DEVICE(dma1), 1, pic[STM32_DMA1_STREAM1_IRQ]);
-    sysbus_connect_irq(SYS_BUS_DEVICE(dma1), 2, pic[STM32_DMA1_STREAM2_IRQ]);
-    sysbus_connect_irq(SYS_BUS_DEVICE(dma1), 3, pic[STM32_DMA1_STREAM3_IRQ]);
-    sysbus_connect_irq(SYS_BUS_DEVICE(dma1), 4, pic[STM32_DMA1_STREAM4_IRQ]);
-    sysbus_connect_irq(SYS_BUS_DEVICE(dma1), 5, pic[STM32_DMA1_STREAM5_IRQ]);
-    sysbus_connect_irq(SYS_BUS_DEVICE(dma1), 6, pic[STM32_DMA1_STREAM6_IRQ]);
-    sysbus_connect_irq(SYS_BUS_DEVICE(dma1), 7, pic[STM32_DMA1_STREAM7_IRQ]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(dma1), 0, nvic[STM32_DMA1_STREAM0_IRQ]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(dma1), 1, nvic[STM32_DMA1_STREAM1_IRQ]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(dma1), 2, nvic[STM32_DMA1_STREAM2_IRQ]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(dma1), 3, nvic[STM32_DMA1_STREAM3_IRQ]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(dma1), 4, nvic[STM32_DMA1_STREAM4_IRQ]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(dma1), 5, nvic[STM32_DMA1_STREAM5_IRQ]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(dma1), 6, nvic[STM32_DMA1_STREAM6_IRQ]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(dma1), 7, nvic[STM32_DMA1_STREAM7_IRQ]);
 
     DeviceState *dma2 = qdev_create(NULL, "f2xx_dma");
     stm32_init_periph(dma2, STM32_DMA2, 0x40026400, NULL);
-    sysbus_connect_irq(SYS_BUS_DEVICE(dma2), 0, pic[STM32_DMA2_STREAM0_IRQ]);
-    sysbus_connect_irq(SYS_BUS_DEVICE(dma2), 1, pic[STM32_DMA2_STREAM1_IRQ]);
-    sysbus_connect_irq(SYS_BUS_DEVICE(dma2), 2, pic[STM32_DMA2_STREAM2_IRQ]);
-    sysbus_connect_irq(SYS_BUS_DEVICE(dma2), 3, pic[STM32_DMA2_STREAM3_IRQ]);
-    sysbus_connect_irq(SYS_BUS_DEVICE(dma2), 4, pic[STM32_DMA2_STREAM4_IRQ]);
-    sysbus_connect_irq(SYS_BUS_DEVICE(dma2), 5, pic[STM32_DMA2_STREAM5_IRQ]);
-    sysbus_connect_irq(SYS_BUS_DEVICE(dma2), 6, pic[STM32_DMA2_STREAM6_IRQ]);
-    sysbus_connect_irq(SYS_BUS_DEVICE(dma2), 7, pic[STM32_DMA2_STREAM7_IRQ]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(dma2), 0, nvic[STM32_DMA2_STREAM0_IRQ]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(dma2), 1, nvic[STM32_DMA2_STREAM1_IRQ]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(dma2), 2, nvic[STM32_DMA2_STREAM2_IRQ]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(dma2), 3, nvic[STM32_DMA2_STREAM3_IRQ]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(dma2), 4, nvic[STM32_DMA2_STREAM4_IRQ]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(dma2), 5, nvic[STM32_DMA2_STREAM5_IRQ]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(dma2), 6, nvic[STM32_DMA2_STREAM6_IRQ]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(dma2), 7, nvic[STM32_DMA2_STREAM7_IRQ]);
 }
 
