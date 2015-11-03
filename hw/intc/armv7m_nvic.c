@@ -29,15 +29,16 @@ typedef struct {
     MemoryRegion sysregmem;
     MemoryRegion gic_iomem_alias;
     MemoryRegion container;
-    uint32_t  num_irq;
-    uint32_t  scr_reg;      /* contents of SCR register */
+    uint32_t num_irq;
+    qemu_irq sysresetreq;
+    uint32_t scr_reg;      /* contents of SCR register */
 
     /* set true if we executed a WFI instruction with the SLEEPDEEP bit set in the SCR */
-    bool      in_deep_sleep;
+    bool in_deep_sleep;
 
     // Set true if we execute a WFI instruction with both SLEEPDEEP bit set in the SCR
     // and PDDS (Power Down Deep Sleep) bit is set in the PWR_CR register
-    bool      in_standby;
+    bool in_standby;
 
     // Properties
     void *stm32_pwr_prop;
@@ -439,10 +440,13 @@ static void nvic_writel(nvic_state *s, uint32_t offset, uint32_t value)
         break;
     case 0xd0c: /* Application Interrupt/Reset Control.  */
         if ((value >> 16) == 0x05fa) {
+            if (value & 4) {
+                qemu_irq_pulse(s->sysresetreq);
+            }
             if (value & 2) {
                 qemu_log_mask(LOG_UNIMP, "VECTCLRACTIVE unimplemented\n");
             }
-            if (value & 5) {
+            if (value & 1) {
                 qemu_system_reset_request();
             }
             s->aircr_reg = value & 0x00700;    /* keep only the bits we suport */
@@ -656,11 +660,14 @@ static void armv7m_nvic_instance_init(Object *obj)
      * value in the GICState struct.
      */
     GICState *s = ARM_GIC_COMMON(obj);
+    DeviceState *dev = DEVICE(obj);
+    nvic_state *nvic = NVIC(obj);
     /* The ARM v7m may have anything from 0 to 496 external interrupt
      * IRQ lines. We default to 64. Other boards may differ and should
      * set the num-irq property appropriately.
      */
     s->num_irq = 64;
+    qdev_init_gpio_out_named(dev, &nvic->sysresetreq, "SYSRESETREQ", 1);
 }
 
 static Property armv7m_nvic_properties[] = {
