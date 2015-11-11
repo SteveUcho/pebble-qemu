@@ -1124,6 +1124,7 @@ QemuCocoaView *cocoaView;
                                    [file cStringUsingEncoding:
                                          NSASCIIStringEncoding],
                                    true, "raw",
+                                   false, 0,
                                    &err);
         handleAnyDeviceErrors(err);
     }
