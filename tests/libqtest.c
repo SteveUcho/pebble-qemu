@@ -134,6 +134,11 @@ static void kill_qemu(QTestState *s)
     }
 }
 
+static void kill_qemu_hook_func(void *s)
+{
+    kill_qemu(s);
+}
+
 static void sigabrt_handler(int signo)
 {
     g_hook_list_invoke(&abrt_hooks, FALSE);
@@ -157,7 +162,7 @@ static void cleanup_sigabrt_handler(void)
     sigaction(SIGABRT, &sigact_old, NULL);
 }
 
-void qtest_add_abrt_handler(void (*fn), const void *data)
+void qtest_add_abrt_handler(GHookFunc fn, const void *data)
 {
     GHook *hook;
 
@@ -196,7 +201,7 @@ QTestState *qtest_init(const char *extra_args)
     init_socket(&s->qtest_socket);
     init_socket(&s->qmp_socket);
 
-    qtest_add_abrt_handler(kill_qemu, s);
+    qtest_add_abrt_handler(kill_qemu_hook_func, s);
 
     s->num_serial_ports = num_serial_ports;
     s->serial_port_sockets = g_malloc(num_serial_ports * sizeof(SocketInfo));
@@ -886,14 +891,15 @@ void qtest_memread(QTestState *s, uint64_t addr, void *data, size_t size)
     g_strfreev(args);
 }
 
-void qtest_add_func(const char *str, void (*fn))
+void qtest_add_func(const char *str, void (*fn)(void))
 {
     gchar *path = g_strdup_printf("/%s/%s", qtest_get_arch(), str);
     g_test_add_func(path, fn);
     g_free(path);
 }
 
-void qtest_add_data_func(const char *str, const void *data, void (*fn))
+void qtest_add_data_func(const char *str, const void *data,
+                         void (*fn)(const void *))
 {
     gchar *path = g_strdup_printf("/%s/%s", qtest_get_arch(), str);
     g_test_add_data_func(path, data, fn);
