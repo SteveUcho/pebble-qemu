@@ -225,7 +225,13 @@ static void pebble_connect_uarts(Stm32Uart *uart[])
 static void pebble_init_buttons(Stm32Gpio *gpio[], const PblButtonMap *map) {
     int i;
     for (i = 0; i < PBL_NUM_BUTTONS; i++) {
-        s_button_irq[i] = qdev_get_gpio_in((DeviceState *)gpio[map[i].gpio], map[i].pin);
+        qemu_irq irq = qdev_get_gpio_in((DeviceState *)gpio[map[i].gpio], map[i].pin);
+        if (map[i].active_high) {
+            s_button_irq[i] = qemu_irq_invert(irq);
+
+        } else {
+            s_button_irq[i] = irq;
+        }
     }
     // GPIO A, pin 0 is the WKUP pin.
     s_button_wakeup = qdev_get_gpio_in((DeviceState *)gpio[STM32_GPIOA_INDEX], 0);
@@ -343,6 +349,7 @@ static void pebble_32f2_init(MachineState *machine, const PblButtonMap *map)
     /* Display */
     spi = (SSIBus *)qdev_get_child_bus(stm.spi_dev[1], "ssi");
     DeviceState *display_dev = ssi_create_slave_no_init(spi, "sm-lcd");
+    qdev_prop_set_bit(display_dev, "rotate_display", true);
     qdev_init_nofail(display_dev);
 
     qemu_irq backlight_enable;
@@ -365,7 +372,6 @@ static void pebble_32f2_init(MachineState *machine, const PblButtonMap *map)
 
     // Init the buttons
     pebble_init_buttons(gpio, map);
-
 
     // Create the board device and wire it up
     qemu_irq display_vibe;

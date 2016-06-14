@@ -370,6 +370,7 @@ void stm32f4xx_init(
                     ram_addr_t ram_size,
                     const char *kernel_filename,
                     Stm32Gpio **stm32_gpio,
+                    const uint32_t *gpio_idr_masks,
                     Stm32Uart **stm32_uart,
                     Stm32Timer **stm32_timer,
                     DeviceState **stm32_rtc,
