@@ -1636,6 +1636,9 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 /* Verifies if the user really wants to quit */
 - (BOOL)verifyQuit
 {
+#ifdef SKIP_QUIT_PROMPT
+    return YES;
+#else
     NSAlert *alert = [NSAlert new];
     [alert autorelease];
     [alert setMessageText: @"Are you sure you want to quit QEMU?"];
@@ -1646,6 +1649,7 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
     } else {
         return NO;
     }
+#endif
 }
 
 /* The action method for the About menu item */

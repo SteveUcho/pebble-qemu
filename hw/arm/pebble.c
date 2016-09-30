@@ -219,6 +219,17 @@ static void pebble_connect_uarts(Stm32Uart *uart[])
     stm32_uart_connect(uart[2], serial_hds[2], 0); /* UART3: console */
 }
 
+void pebble_connect_uarts_stm32f7xx(Stm32F7xxUart *uart[], const PblBoardConfig *board_config)
+{
+    // This UART is used for control messages, put in our pebble_control device in between
+    // the qemu serial chr and the uart. This enables us to intercept and act selectively
+    // act on messages sent to the Pebble in QEMU before they get to it.
+    s_pebble_control = pebble_control_create_stm32f7xx(serial_hds[1],
+            uart[board_config->pebble_control_uart_index]);
+
+    stm32f7xx_uart_connect(uart[board_config->dbgserial_uart_index], serial_hds[2], 0);
+}
+
 
 // -----------------------------------------------------------------------------------------
 // Init button handling

@@ -274,6 +274,9 @@ typedef struct Stm32Timer Stm32Timer;
 #define STM32_TIM_COUNT   14
 
 
+/* LPTIM */
+typedef struct Stm32F7xxLPTimer Stm32F7xxLPTimer;
+
 
 /* UART */
 #define STM32_UART_COUNT 5
@@ -377,6 +380,22 @@ void stm32f4xx_init(
                     uint32_t osc_freq,
                     uint32_t osc32_freq,
                     struct stm32f4xx *stm,
+                    ARMCPU **cpu);
+
+struct stm32f7xx;
+void stm32f7xx_init(
+                    ram_addr_t flash_size,
+                    ram_addr_t ram_size,
+                    const char *kernel_filename,
+                    Stm32Gpio **stm32_gpio,
+                    const uint32_t *gpio_idr_masks,
+                    Stm32F7xxUart **stm32_uart,
+                    Stm32Timer **stm32_timer,
+                    Stm32F7xxLPTimer **lptimer,
+                    DeviceState **stm32_rtc,
+                    uint32_t osc_freq,
+                    uint32_t osc32_freq,
+                    struct stm32f7xx *stm,
                     ARMCPU **cpu);
 
 #endif /* STM32_H */
