@@ -110,3 +110,6 @@ build
 .cproject
 .project
 xcode/.idea
+
+.cache/
+.vscode/
