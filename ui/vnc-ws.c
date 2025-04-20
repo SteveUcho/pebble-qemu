@@ -59,9 +59,20 @@ static void vncws_tls_handshake_io(void *opaque)
 {
     struct VncState *vs = (struct VncState *)opaque;
 
-    VNC_DEBUG("Handshake IO continue\n");
-    vncws_start_tls_handshake(vs);
-}
+    if (!vs->tls) {
+        vs->tls = qcrypto_tls_session_new(vs->vd->tlscreds,
+                                          NULL,
+                                          vs->vd->tlsaclname,
+                                          QCRYPTO_TLS_CREDS_ENDPOINT_SERVER,
+                                          &err);
+    }
+    if (!vs->tls) {
+        VNC_DEBUG("Failed to setup TLS %s\n",
+                  error_get_pretty(err));
+        error_free(err);
+        vnc_client_error(vs);
+        return;
+    }
 
 void vncws_tls_handshake_peek(void *opaque)
 {

@@ -949,6 +949,150 @@ QemuCocoaView *cocoaView;
     [[NSWorkspace sharedWorkspace] openFile:[NSString stringWithFormat:@"%@/../doc/qemu/qemu-tech.html",
         [[NSBundle mainBundle] resourcePath]] withApplication:@"Help Viewer"];
 }
+
+/* Stretches video to fit host monitor size */
+- (void)zoomToFit:(id) sender
+{
+    stretch_video = !stretch_video;
+    if (stretch_video == true) {
+        [sender setState: NSOnState];
+    } else {
+        [sender setState: NSOffState];
+    }
+}
+
+/* Displays the console on the screen */
+- (void)displayConsole:(id)sender
+{
+    console_select([sender tag]);
+}
+
+/* Pause the guest */
+- (void)pauseQEMU:(id)sender
+{
+    qmp_stop(NULL);
+    [sender setEnabled: NO];
+    [[[sender menu] itemWithTitle: @"Resume"] setEnabled: YES];
+    [self displayPause];
+}
+
+/* Resume running the guest operating system */
+- (void)resumeQEMU:(id) sender
+{
+    qmp_cont(NULL);
+    [sender setEnabled: NO];
+    [[[sender menu] itemWithTitle: @"Pause"] setEnabled: YES];
+    [self removePause];
+}
+
+/* Displays the word pause on the screen */
+- (void)displayPause
+{
+    /* Coordinates have to be calculated each time because the window can change its size */
+    int xCoord, yCoord, width, height;
+    xCoord = ([normalWindow frame].size.width - [pauseLabel frame].size.width)/2;
+    yCoord = [normalWindow frame].size.height - [pauseLabel frame].size.height - ([pauseLabel frame].size.height * .5);
+    width = [pauseLabel frame].size.width;
+    height = [pauseLabel frame].size.height;
+    [pauseLabel setFrame: NSMakeRect(xCoord, yCoord, width, height)];
+    [cocoaView addSubview: pauseLabel];
+}
+
+/* Removes the word pause from the screen */
+- (void)removePause
+{
+    [pauseLabel removeFromSuperview];
+}
+
+/* Restarts QEMU */
+- (void)restartQEMU:(id)sender
+{
+    qmp_system_reset(NULL);
+}
+
+/* Powers down QEMU */
+- (void)powerDownQEMU:(id)sender
+{
+    qmp_system_powerdown(NULL);
+}
+
+/* Ejects the media.
+ * Uses sender's tag to figure out the device to eject.
+ */
+- (void)ejectDeviceMedia:(id)sender
+{
+    NSString * drive;
+    drive = [sender representedObject];
+    if(drive == nil) {
+        NSBeep();
+        QEMU_Alert(@"Failed to find drive to eject!");
+        return;
+    }
+
+    Error *err = NULL;
+    qmp_eject([drive cStringUsingEncoding: NSASCIIStringEncoding], false, false, &err);
+    handleAnyDeviceErrors(err);
+}
+
+/* Displays a dialog box asking the user to select an image file to load.
+ * Uses sender's represented object value to figure out which drive to use.
+ */
+- (void)changeDeviceMedia:(id)sender
+{
+    /* Find the drive name */
+    NSString * drive;
+    drive = [sender representedObject];
+    if(drive == nil) {
+        NSBeep();
+        QEMU_Alert(@"Could not find drive!");
+        return;
+    }
+
+    /* Display the file open dialog */
+    NSOpenPanel * openPanel;
+    openPanel = [NSOpenPanel openPanel];
+    [openPanel setCanChooseFiles: YES];
+    [openPanel setAllowsMultipleSelection: NO];
+    [openPanel setAllowedFileTypes: supportedImageFileTypes];
+    if([openPanel runModal] == NSFileHandlingPanelOKButton) {
+        NSString * file = [[[openPanel URLs] objectAtIndex: 0] path];
+        if(file == nil) {
+            NSBeep();
+            QEMU_Alert(@"Failed to convert URL to file path!");
+            return;
+        }
+
+        Error *err = NULL;
+        qmp_blockdev_change_medium([drive cStringUsingEncoding:
+                                          NSASCIIStringEncoding],
+                                   [file cStringUsingEncoding:
+                                         NSASCIIStringEncoding],
+                                   true, "raw",
+                                   false, 0,
+                                   &err);
+        handleAnyDeviceErrors(err);
+    }
+}
+
+/* Verifies if the user really wants to quit */
+- (BOOL)verifyQuit
+{
+#ifdef SKIP_QUIT_PROMPT
+    return YES;
+#else
+    NSAlert *alert = [NSAlert new];
+    [alert autorelease];
+    [alert setMessageText: @"Are you sure you want to quit QEMU?"];
+    [alert addButtonWithTitle: @"Cancel"];
+    [alert addButtonWithTitle: @"Quit"];
+    if([alert runModal] == NSAlertSecondButtonReturn) {
+        return YES;
+    } else {
+        return NO;
+    }
+#endif
+}
+
 @end
 
 
