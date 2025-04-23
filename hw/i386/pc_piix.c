@@ -332,7 +332,6 @@ static void pc_compat_2_1(MachineState *machine)
 static void pc_compat_2_0(MachineState *machine)
 {
     pc_compat_2_1(machine);
-    pc_compat_2_1(machine);
     /* This value depends on the actual DSDT and SSDT compiled into
      * the source QEMU; unfortunately it depends on the binary and
      * not on the machine type, so we cannot make pc-i440fx-1.7 work on

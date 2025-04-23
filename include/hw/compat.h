@@ -7,6 +7,10 @@
             .property = "scsi",\
             .value    = "true",\
         },{\
+            .driver   = "e1000",\
+            .property = "extra_mac_registers",\
+            .value    = "off",\
+        },{\
             .driver   = "virtio-pci",\
             .property = "x-disable-pcie",\
             .value    = "on",\

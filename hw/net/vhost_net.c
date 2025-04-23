@@ -221,8 +221,7 @@ static int vhost_net_set_vnet_endian(VirtIODevice *dev, NetClientState *peer,
 }
 
 static int vhost_net_start_one(struct vhost_net *net,
-                               VirtIODevice *dev,
-                               int vq_index)
+                               VirtIODevice *dev)
 {
     struct vhost_vring_file file = { };
     int r;
@@ -353,6 +352,10 @@ void vhost_net_stop(VirtIODevice *dev, NetClientState *ncs,
     VirtioBusState *vbus = VIRTIO_BUS(qbus);
     VirtioBusClass *k = VIRTIO_BUS_GET_CLASS(vbus);
     int i, r;
+
+    for (i = 0; i < total_queues; i++) {
+        vhost_net_stop_one(get_vhost_net(ncs[i].peer), dev);
+    }
 
     r = k->set_guest_notifiers(qbus->parent, total_queues * 2, false);
     if (r < 0) {

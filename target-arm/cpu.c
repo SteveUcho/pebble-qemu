@@ -888,7 +888,7 @@ static void cortex_m3_initfn(Object *obj)
     ARMCPU *cpu = ARM_CPU(obj);
     set_feature(&cpu->env, ARM_FEATURE_V7);
     set_feature(&cpu->env, ARM_FEATURE_M);
-    cpu->midr = 0x412fc231;
+    cpu->midr = 0x410fc231;
 }
 
 static void cortex_m4_initfn(Object *obj)

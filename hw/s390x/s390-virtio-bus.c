@@ -543,18 +543,12 @@ static void virtio_s390_device_plugged(DeviceState *d, Error **errp)
 
 /**************** S390 Virtio Bus Device Descriptions *******************/
 
-static Property s390_virtio_net_properties[] = {
-    DEFINE_VIRTIO_COMMON_FEATURES(VirtIOS390Device, host_features),
-    DEFINE_PROP_END_OF_LIST(),
-};
-
 static void s390_virtio_net_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     VirtIOS390DeviceClass *k = VIRTIO_S390_DEVICE_CLASS(klass);
 
     k->realize = s390_virtio_net_realize;
-    dc->props = s390_virtio_net_properties;
     set_bit(DEVICE_CATEGORY_NETWORK, dc->categories);
 }
 
@@ -652,18 +646,12 @@ static const TypeInfo virtio_s390_device_info = {
     .abstract = true,
 };
 
-static Property s390_virtio_scsi_properties[] = {
-    DEFINE_VIRTIO_COMMON_FEATURES(VirtIOS390Device, host_features),
-    DEFINE_PROP_END_OF_LIST(),
-};
-
 static void s390_virtio_scsi_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     VirtIOS390DeviceClass *k = VIRTIO_S390_DEVICE_CLASS(klass);
 
     k->realize = s390_virtio_scsi_realize;
-    dc->props = s390_virtio_scsi_properties;
     set_bit(DEVICE_CATEGORY_STORAGE, dc->categories);
 }
 
